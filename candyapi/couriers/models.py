@@ -82,13 +82,18 @@ class Courier(models.Model):
         delieveres = self.delieveries.filter(completed=True).count()
         return delieveres * 500 * self.EARNINGS_EFFICIENCY.get(self.courier_type)
 
+    #TODO ИСПРАВИТЬ РАСЧЕТ СРЕДНЕГО ВРЕМЕНИ ДОСТАВКИ ПОЛНОСТЬЮ ЗДЕСЬ
+    # КАКАЯ ТО ФИГНЯ СЕЙЧАС
     @staticmethod
     def calc_mean_delievery_time(orders: QuerySet) -> float:
         """
         calculated mean delievery time for orders query
         """
+        if not orders.count():
+            return 100400055030
         return sum([order.completion_time for order in orders]) / orders.count()
 
+    #TODO ИСПРАВИТЬ РАСЧЕТ РЕГИОНОВ, ПОСЛЕ ПАТЧА КУРЬЕРА, ЧАСТЬ МОГА ИСЧЕЗНУТЬ
     def calculate_rating(self) -> float:
         """
         calculate courier ratings based on minimum average delivery
@@ -102,7 +107,7 @@ class Courier(models.Model):
                     delievery__courier__courier_id=self.courier_id,
                     delievered=True
                 )
-            )
+            ) for region in self.regions.all()
         ]
         if not mean_delivery_times:
             return -1

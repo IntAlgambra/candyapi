@@ -83,6 +83,10 @@ class AssignView(View):
             data = json.loads(request.body.decode())
             courier_id = AssignDataModel(**data).courier_id
             delievery = assign(courier_id)
+            if not delievery:
+                return JsonResponse(
+                    data={"orders": []}
+                )
             delievery_data = {
                 "orders": [
                     {

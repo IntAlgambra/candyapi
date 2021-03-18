@@ -149,9 +149,9 @@ class CompletionDataModel(BaseModel):
         """
         Validates complete_time is valid isoformat datetime string
         """
-        pattern = r"/\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{1,6}Z/gm"
+        pattern = r"\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{1,6}Z"
         if not re.fullmatch(pattern, v):
-            raise ValueError("Invalid complete_time strig")
+            raise ValueError("Invalid complete_time string")
         return v
 
 

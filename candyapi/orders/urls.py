@@ -1,8 +1,13 @@
-from django.urls import path
+from django.urls import path, include
 
-from .views import OrdersView, AssignView
+from .views import OrdersView, AssignView, CompletionView
+
+assignment_pattern = [
+    path("assign", AssignView.as_view()),
+    path("complete", CompletionView.as_view())
+]
 
 urlpatterns = [
-    path("", OrdersView.as_view()),
-    path("assign", AssignView.as_view())
+    path("/", include(assignment_pattern)),
+    path("", OrdersView.as_view())
 ]

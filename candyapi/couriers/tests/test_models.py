@@ -26,8 +26,6 @@ class TestCourier(TestCase):
         )
         courier = Courier.objects.create_courier(
             data=courier_data_model,
-            intervals=intervals,
-            regions=regions
         )
         cls.test_courier_id = courier.courier_id
 
@@ -50,8 +48,6 @@ class TestCourier(TestCase):
         )
         courier = Courier.objects.create_courier(
             data=courier_data_model,
-            intervals=intervals,
-            regions=regions
         )
         self.assertEqual(
             courier.courier_id,

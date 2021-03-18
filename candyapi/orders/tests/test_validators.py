@@ -7,7 +7,8 @@ from pydantic import ValidationError
 from orders.validators import (OrderDataModel,
                                OrderTypeError,
                                OrderListDataModel,
-                               OrdersValidationError)
+                               OrdersValidationError,
+                               CompletionDataModel)
 
 
 class TestOrderDataModel(SimpleTestCase):
@@ -59,6 +60,7 @@ class TestOrderDataModel(SimpleTestCase):
             OrderDataModel(**invalid_region_data)
 
 
+# noinspection DuplicatedCode
 class TestOrderListDataModel(SimpleTestCase):
     TEST_DATA = {
         "data": [
@@ -121,3 +123,20 @@ class TestOrderListDataModel(SimpleTestCase):
             context.exception.invaid_orders,
             [13]
         )
+
+
+class TestCompletionDataModel(SimpleTestCase):
+
+    def testValidData(self):
+        """
+        Tests creation CompletionModel with valid data
+        """
+        data = {
+            "courier_id": 2,
+            "order_id": 33,
+            "complete_time": "2021-01-10T10:33:01.42Z"
+        }
+        data_model = CompletionDataModel(**data)
+        self.assertEqual(data_model.courier_id, 2)
+        self.assertEqual(data_model.order_id, 33)
+        self.assertEqual(data_model.complete_time, "2021-01-10T10:33:01.42Z")

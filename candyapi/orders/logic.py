@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from functools import reduce
 from datetime import datetime
 
@@ -10,7 +10,7 @@ from couriers.models import Courier, Interval
 
 
 @transaction.atomic
-def assign(courier_id: int) -> Delievery:
+def assign(courier_id: int) -> Optional[Delievery]:
     """
     Function creates new delivery, assigns it to courier and add to this delivery
     all suitable orders. If couriers alredy has active delievery, returns it
@@ -20,6 +20,8 @@ def assign(courier_id: int) -> Delievery:
         active_delievery = courier.delieveries.get(completed=False)
         return active_delievery
     max_weight = Courier.WEIGHT_MAP.get(courier.courier_type)
+    if courier.intervals.all().count() == 0:
+        return None
     interval_condition = construct_assign_query(list(courier.intervals.all()))
     suitable_orders = Order.objects.filter(
         interval_condition,
@@ -28,6 +30,8 @@ def assign(courier_id: int) -> Delievery:
         weight__lte=max_weight,
         region__couriers=courier
     )
+    if suitable_orders.count() == 0:
+        return None
     delievery = Delievery.objects.create_delievery(
         orders=suitable_orders,
         courier=courier,

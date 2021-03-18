@@ -5,7 +5,7 @@ from typing import List
 
 from django.db import transaction
 
-from .models import Courier, Region, Interval
+from .models import Courier
 from .validators import CouriersListDataModel
 
 
@@ -17,12 +17,8 @@ def create_couriers_from_list(couriers: CouriersListDataModel) -> List[int]:
     """
     created_couriers = []
     for courier in couriers.data:
-        regions = Region.objects.create_from_list(courier.regions)
-        intervals = Interval.objects.create_from_list(courier.working_hours)
         courier_object = Courier.objects.create_courier(
-            data=courier,
-            regions=regions,
-            intervals=intervals
+            data=courier
         )
         created_couriers.append(courier_object.courier_id)
     return created_couriers
