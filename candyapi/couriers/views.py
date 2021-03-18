@@ -85,6 +85,23 @@ class CourierView(View):
         """
         return super(CourierView, self).dispatch(request, *args, **kwargs)
 
+    def get(self, request: HttpRequest, courier_id: int) -> HttpResponse:
+        """
+        Process request for courier info and statistics
+        """
+        try:
+            courier = Courier.objects.get(courier_id=courier_id)
+            return JsonResponse(courier.info())
+        except ObjectDoesNotExist:
+            return JsonResponse(
+                status=400,
+                data={
+                    "error": "Courier with courier_id={} does not exist".format(
+                        courier_id
+                    )
+                }
+            )
+
     def patch(self, request: HttpRequest, courier_id: int) -> HttpResponse:
         """
         View process request for modifying courier data

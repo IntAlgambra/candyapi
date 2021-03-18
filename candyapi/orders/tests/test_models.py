@@ -5,6 +5,7 @@ from orders.models import Order
 from orders.validators import OrderDataModel, OrderListDataModel
 
 
+# noinspection DuplicatedCode
 class OrderModelTest(TestCase):
 
     def testCreateOrder(self):
@@ -84,3 +85,6 @@ class OrderModelTest(TestCase):
         }
         with self.assertRaises(IntegrityError):
             Order.objects.create_from_list(OrderListDataModel(**order_data_2))
+
+class DelieveryModeltest(TestCase):
+    pass

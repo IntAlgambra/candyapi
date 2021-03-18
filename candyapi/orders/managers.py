@@ -4,12 +4,15 @@ from typing import List
 
 if TYPE_CHECKING:
     from .models import Order
+    from couriers.models import Region
 
+from django.apps import apps
 from django.db import models
 from django.db import transaction
 from django.utils import timezone
-from couriers.models import Region, Interval, Courier
 from .validators import OrderDataModel, OrderListDataModel
+
+from utils.models import Region, Interval
 
 
 class DelieveryManager(models.Manager):

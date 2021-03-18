@@ -1,18 +1,26 @@
 import json
 from django.test import TestCase
 from django.conf import settings
+from django.utils import timezone
 
 from couriers.models import Courier, Region, Interval
 from couriers.validators import CourierDataModel
 from orders.models import Order
 from orders.validators import OrderDataModel
 from orders.logic import assign
+from candyapi.utils import format_time
 
 
 class TestLogic(TestCase):
+    """
+    Tests assigment and completion logic
+    """
 
     @classmethod
     def setUpTestData(cls):
+        """
+        Adding to database orders from test_orders.json
+        """
         courier_data = {
             "courier_id": 42,
             "courier_type": "foot",
@@ -35,6 +43,9 @@ class TestLogic(TestCase):
                 )
 
     def testSimpleAssign(self):
+        """
+        Tests assigning orders to courier.
+        """
         courier = Courier.objects.get(courier_id=self.courier_id)
         orders = assign(courier.courier_id).orders.all()
         print(orders)

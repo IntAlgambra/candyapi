@@ -1,46 +1,14 @@
+from functools import reduce
+
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
-from .managers import CourierManager, IntervalManager, RegionManager
+from django.db.models.query import QuerySet
+
+from .managers import CourierManager
 from .validators import CourierPatchDataModel
 from orders.utils import construct_assign_query
-
-
-class Region(models.Model):
-    """
-    Класс описывает модель данных регионов
-    fields:
-        region_id (int): region identifier
-    """
-    region_id = models.IntegerField(primary_key=True, unique=True)
-    objects = RegionManager()
-
-
-class Interval(models.Model):
-    """
-    Class describes model of time interval data
-    fields:
-        start (int): seconds from 00:00
-        end (int): seconds from 00:00
-    """
-
-    class Meta:
-        unique_together = ("start", "end")
-
-    start = models.IntegerField()
-    end = models.IntegerField()
-    objects = IntervalManager()
-
-    def __str__(self):
-        start_hours = "{}".format(self.start // (60 * 60)).zfill(2)
-        start_minutes = "{}".format((self.start % (60 * 60)) // 60).zfill(2)
-        end_hours = "{}".format(self.end // (60 * 60)).zfill(2)
-        end_minutes = "{}".format((self.end % (60 * 60)) // 60).zfill(2)
-        return "{}:{}-{}:{}".format(
-            start_hours,
-            start_minutes,
-            end_hours,
-            end_minutes
-        )
+from orders.models import Order
+from utils.models import Interval, Region
 
 
 class Courier(models.Model):
@@ -58,10 +26,15 @@ class Courier(models.Model):
         "bike": 15,
         "car": 50
     }
+    EARNINGS_EFFICIENCY = {
+        "foot": 2,
+        "bike": 5,
+        "car": 9
+    }
     courier_id = models.IntegerField(primary_key=True, unique=True)
     courier_type = models.CharField(max_length=4)
-    regions = models.ManyToManyField(to=Region, related_name="couriers")
-    intervals = models.ManyToManyField(to=Interval, related_name="couriers")
+    regions = models.ManyToManyField(to="utils.Region", related_name="couriers")
+    intervals = models.ManyToManyField(to="utils.Interval", related_name="couriers")
     rating = models.FloatField(default=5)
     earnings = models.FloatField(default=0)
     last_deliver_time = models.DateTimeField(null=True)
@@ -102,7 +75,44 @@ class Courier(models.Model):
         finally:
             return self.to_dict()
 
+    def calculate_earnings(self) -> int:
+        """
+        Calculates courier earnings based on completed delieveries
+        """
+        delieveres = self.delieveries.filter(completed=True).count()
+        return delieveres * 500 * self.EARNINGS_EFFICIENCY.get(self.courier_type)
+
+    @staticmethod
+    def calc_mean_delievery_time(orders: QuerySet) -> float:
+        """
+        calculated mean delievery time for orders query
+        """
+        return sum([order.completion_time for order in orders]) / orders.count()
+
+    def calculate_rating(self) -> float:
+        """
+        calculate courier ratings based on minimum average delivery
+        time for region. If courier doesn't have completed orders
+        returns -1
+        """
+        mean_delivery_times = [
+            self.calc_mean_delievery_time(
+                Order.objects.filter(
+                    region_id=region,
+                    delievery__courier__courier_id=self.courier_id,
+                    delievered=True
+                )
+            )
+        ]
+        if not mean_delivery_times:
+            return -1
+        rating = (3600 - min(min(mean_delivery_times), 3600)) / 3600 * 5
+        return rating
+
     def to_dict(self):
+        """
+        Returns courier info without rating and earnings
+        """
         return {
             "courier_id": self.courier_id,
             "courier_type": self.courier_type,
@@ -113,3 +123,20 @@ class Courier(models.Model):
                 str(interval) for interval in self.intervals.all()
             ]
         }
+
+    def info(self):
+        """
+        Returns courier info
+        """
+        rating = self.calculate_rating()
+        if rating >= 0:
+            return {
+                **self.to_dict(),
+                "rating": self.calculate_rating(),
+                "earnings": self.calculate_earnings()
+            }
+        else:
+            return {
+                **self.to_dict(),
+                "earnings": 0
+            }

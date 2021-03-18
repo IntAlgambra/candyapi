@@ -3,8 +3,6 @@ from datetime import datetime
 
 from django.db import models
 
-from couriers.models import Region, Interval, Courier
-
 from .managers import OrderManager, DelieveryManager
 
 
@@ -16,7 +14,9 @@ class Delievery(models.Model):
     """
     assigned_time = models.DateTimeField()
     last_delievery_time = models.DateTimeField()
-    courier = models.ForeignKey(to=Courier, related_name="delieveries", on_delete=models.CASCADE)
+    courier = models.ForeignKey(to="couriers.Courier",
+                                related_name="delieveries",
+                                on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
     objects = DelieveryManager()
 
@@ -27,8 +27,10 @@ class Order(models.Model):
     """
     order_id = models.IntegerField(primary_key=True, unique=True)
     weight = models.FloatField()
-    region = models.ForeignKey(to=Region, null=True, on_delete=models.SET_NULL)
-    intervals = models.ManyToManyField(to=Interval)
+    region = models.ForeignKey(to="utils.Region",
+                               null=True,
+                               on_delete=models.SET_NULL)
+    intervals = models.ManyToManyField(to="utils.Interval")
     delievered = models.BooleanField(default=False)
     delievery_time = models.DateTimeField(null=True)
     completion_time = models.IntegerField(null=True)

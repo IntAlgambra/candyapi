@@ -33,8 +33,9 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "couriers.apps.CouriersConfig",
-    "orders.apps.OrdersConfig"
-
+    "orders.apps.OrdersConfig",
+    "utils.apps.UtilsConfig",
+    "django_extensions"
 ]
 
 MIDDLEWARE = [
