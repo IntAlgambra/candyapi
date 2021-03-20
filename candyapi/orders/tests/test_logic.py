@@ -9,7 +9,9 @@ from couriers.models import Courier, Region, Interval
 from couriers.validators import CourierDataModel
 from orders.models import Order
 from orders.validators import OrderDataModel
-from orders.logic import assign, complete_order
+from orders.logic import (assign,
+                          complete_order,
+                          CompleteTimeError)
 from candyapi.utils import format_time
 
 
@@ -184,5 +186,49 @@ class TestLogic(TestCase):
                     timezone.now() + timedelta(minutes=30)
                 )
             )
+
+    def testCompleteBeforeDelieveryAssigned(self):
+        """
+        Tests attempt to complete order earlier
+        than previous order was completed
+        """
+        delievery = assign(self.courier_id)
+        order = delievery.orders.first()
+        with self.assertRaises(CompleteTimeError):
+            complete_order(
+                order_id=order.order_id,
+                courier_id=self.courier_id,
+                complete_time=format_time(
+                    delievery.assigned_time - timedelta(minutes=30)
+                )
+            )
+
+    def testCompleteBeforePrevious(self):
+        """
+        Tests attempt to complete order before previous
+        order was completed
+        """
+        delievery = assign(self.courier_id)
+        orders = list(delievery.orders.all())
+        order_1 = orders[0]
+        order_2 = orders[1]
+        complete_order(
+            order_id=order_1.order_id,
+            courier_id=self.courier_id,
+            complete_time=format_time(
+                timezone.now() + timedelta(minutes=30)
+            )
+        )
+        order_1.refresh_from_db()
+        with self.assertRaises(CompleteTimeError):
+            complete_order(
+                order_id=order_2.order_id,
+                courier_id=self.courier_id,
+                complete_time=format_time(
+                    order_1.delievery_time - timedelta(minutes=15)
+                )
+            )
+
+
 
 

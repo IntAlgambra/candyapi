@@ -2,11 +2,25 @@ from typing import List, Optional
 from functools import reduce
 from datetime import datetime
 
+from dateutil import parser
+
 from django.db import transaction
 
 from .models import Delievery, Order
 from .utils import construct_assign_query
 from couriers.models import Courier, Interval
+
+
+class CompleteTimeError(Exception):
+    """
+    Raised if there is attempt to complete order earlier,
+    than previous order was completed
+    """
+
+    def __init__(self):
+        super(CompleteTimeError, self).__init__(
+            "Order complete time can not be earlier than previos delievered order"
+        )
 
 
 @transaction.atomic
@@ -49,6 +63,8 @@ def complete_order(courier_id: int,
     """
     courier = Courier.objects.get(courier_id=courier_id)
     delievery = courier.delieveries.get(completed=False)
+    if parser.isoparse(complete_time) <= delievery.last_delievery_time:
+        raise CompleteTimeError()
     order = delievery.orders.filter(delievered=False).get(order_id=order_id)
     order.complete(
         datetime_string=complete_time,

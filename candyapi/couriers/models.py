@@ -100,18 +100,21 @@ class Courier(models.Model):
         ]) / completed_orders.count()
         return mean
 
-    def calculate_rating(self):
+    def calculate_rating(self) -> float:
         """
-        Calculates courier rating
+        Calculates courier rating. If courier doesn't have
+        any completed orders yet, returns -1
         """
         # selects all region where courier has completed orders
         regions_with_completed_orders = Region.objects.filter(
             order__delievered=True,
             order__delievery__courier_id=self.courier_id
         )
+        if not regions_with_completed_orders.exists():
+            return -1
         min_mean_time = min(
-            self._calc_mean_delievery_time(region.region_id) for
-            region in regions_with_completed_orders
+            [self._calc_mean_delievery_time(region.region_id) for
+             region in regions_with_completed_orders]
         )
         rating = (3600 - min(min_mean_time, 3600)) / 3600 * 5
         return round(rating, 2)

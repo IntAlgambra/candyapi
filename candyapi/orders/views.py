@@ -23,7 +23,9 @@ from .validators import (OrderDataModel,
                          CompletionDataModel,
                          CompletionValidationError)
 from .models import Order
-from .logic import assign, complete_order
+from .logic import (assign,
+                    complete_order,
+                    CompleteTimeError)
 
 
 class OrdersView(View):
@@ -123,6 +125,12 @@ class CompletionView(View):
             return JsonResponse(data={
                 "order_id": order.order_id
             })
+        except CompleteTimeError:
+            return JsonResponse(
+                data={
+                    "error": "Order can not be completed earlier, than previos order"
+                }
+            )
         except ObjectDoesNotExist:
             return HttpResponseBadRequest(
                 "Order does not exists, is not assigned or have been completed"
