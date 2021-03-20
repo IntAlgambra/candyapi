@@ -54,7 +54,14 @@ class CouriersView(View):
                 ]}
             )
         except JSONDecodeError:
-            return HttpResponseBadRequest("Request body is not a valid json")
+            return JsonResponse(
+                status=400,
+                data={
+                    "validation_errors": {
+                        "common": "request body is not valid json"
+                    }
+                }
+            )
         except InvalidCouriersInDataError as e:
             error_data = [
                 {"id": courier_id} for courier_id in e.invalid_couriers
@@ -67,8 +74,11 @@ class CouriersView(View):
                 }).encode()
             )
         except IntegrityError:
-            return HttpResponseBadRequest(
-                "Attempt to add courier with existing id. Use PATCH instead"
+            return JsonResponse(
+                status=400,
+                data={
+                    "database_error": "can not add couriers which already exist"
+                }
             )
 
 
@@ -96,7 +106,7 @@ class CourierView(View):
             return JsonResponse(
                 status=400,
                 data={
-                    "error": "Courier with courier_id={} does not exist".format(
+                    "database_error": "Courier with courier_id={} does not exist".format(
                         courier_id
                     )
                 }
@@ -112,6 +122,20 @@ class CourierView(View):
             data = courier.update(data)
             return JsonResponse(data)
         except JSONDecodeError:
-            return HttpResponseBadRequest("Request body is not a valid json")
+            return JsonResponse(
+                status=400,
+                data={
+                    "validation_errors": {
+                        "common": "request body is not valid json"
+                    }
+                }
+            )
         except ObjectDoesNotExist:
-            return HttpResponseBadRequest("No user with id {}".format(courier_id))
+            return JsonResponse(
+                status=400,
+                data={
+                    "database_error": "Courier with courier_id={} does not exist".format(
+                        courier_id
+                    )
+                }
+            )

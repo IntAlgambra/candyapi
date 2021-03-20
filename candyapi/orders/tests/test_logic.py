@@ -56,8 +56,8 @@ class TestLogic(TestCase):
         orders = delievery.orders.all()
         # checking only tho orders was assigned
         self.assertEqual(
-            [order.order_id for order in orders],
-            [1, 3]
+            {order.order_id for order in orders},
+            {1, 3}
         )
 
     def testNoSuitableOrders(self):
@@ -184,6 +184,5 @@ class TestLogic(TestCase):
                     timezone.now() + timedelta(minutes=30)
                 )
             )
-
 
 

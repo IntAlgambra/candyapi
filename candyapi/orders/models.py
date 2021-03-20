@@ -18,6 +18,7 @@ class Delievery(models.Model):
                                 related_name="delieveries",
                                 on_delete=models.CASCADE)
     completed = models.BooleanField(default=False)
+    transport_type = models.CharField(default="foot", max_length=4)
     objects = DelieveryManager()
 
 

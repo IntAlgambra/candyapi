@@ -79,40 +79,42 @@ class Courier(models.Model):
         """
         Calculates courier earnings based on completed delieveries
         """
-        delieveres = self.delieveries.filter(completed=True).count()
-        return delieveres * 500 * self.EARNINGS_EFFICIENCY.get(self.courier_type)
+        delieveres = self.delieveries.filter(completed=True)
+        return sum([
+            500 * self.EARNINGS_EFFICIENCY.get(delievery.transport_type)
+            for delievery in delieveres
+        ])
 
-    #TODO ИСПРАВИТЬ РАСЧЕТ СРЕДНЕГО ВРЕМЕНИ ДОСТАВКИ ПОЛНОСТЬЮ ЗДЕСЬ
-    # КАКАЯ ТО ФИГНЯ СЕЙЧАС
-    @staticmethod
-    def calc_mean_delievery_time(orders: QuerySet) -> float:
+    def _calc_mean_delievery_time(self, region_id: int) -> float:
         """
-        calculated mean delievery time for orders query
+        Calculates mean delievery time for region with
+        provided region id
         """
-        if not orders.count():
-            return 100400055030
-        return sum([order.completion_time for order in orders]) / orders.count()
+        completed_orders = Order.objects.filter(
+            delievery__courier__courier_id=self.courier_id,
+            delievered=True,
+            region_id=region_id
+        )
+        mean = sum([
+            order.completion_time for order in completed_orders
+        ]) / completed_orders.count()
+        return mean
 
-    #TODO ИСПРАВИТЬ РАСЧЕТ РЕГИОНОВ, ПОСЛЕ ПАТЧА КУРЬЕРА, ЧАСТЬ МОГА ИСЧЕЗНУТЬ
-    def calculate_rating(self) -> float:
+    def calculate_rating(self):
         """
-        calculate courier ratings based on minimum average delivery
-        time for region. If courier doesn't have completed orders
-        returns -1
+        Calculates courier rating
         """
-        mean_delivery_times = [
-            self.calc_mean_delievery_time(
-                Order.objects.filter(
-                    region_id=region,
-                    delievery__courier__courier_id=self.courier_id,
-                    delievered=True
-                )
-            ) for region in self.regions.all()
-        ]
-        if not mean_delivery_times:
-            return -1
-        rating = (3600 - min(min(mean_delivery_times), 3600)) / 3600 * 5
-        return rating
+        # selects all region where courier has completed orders
+        regions_with_completed_orders = Region.objects.filter(
+            order__delievered=True,
+            order__delievery__courier_id=self.courier_id
+        )
+        min_mean_time = min(
+            self._calc_mean_delievery_time(region.region_id) for
+            region in regions_with_completed_orders
+        )
+        rating = (3600 - min(min_mean_time, 3600)) / 3600 * 5
+        return round(rating, 2)
 
     def to_dict(self):
         """

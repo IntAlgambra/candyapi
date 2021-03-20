@@ -26,6 +26,7 @@ class DelieveryManager(models.Manager):
             assigned_time=assigned_time,
             last_delievery_time=assigned_time,
             courier=courier,
+            transport_type=courier.courier_type
         )
         for order in orders:
             delievery.orders.add(order)

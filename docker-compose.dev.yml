@@ -7,11 +7,10 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     env_file: 
       - .candyapi.env
-    restart: unless-stopped
   backend:
     build:
       context: .
-    command: gunicorn --workers 4 --bind 0.0.0.0:8000 candyapi.wsgi
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./candyapi:/usr/src/candyapi/candyapi
     environment:
@@ -22,7 +21,6 @@ services:
       - db
     ports: 
       - 8000:8000
-    restart: unless-stopped
 
 volumes:
   postgres_data:
