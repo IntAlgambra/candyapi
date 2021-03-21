@@ -59,7 +59,7 @@ class TestLogic(TestCase):
         # checking only tho orders was assigned
         self.assertEqual(
             {order.order_id for order in orders},
-            {1, 3}
+            {7, 3, 6}
         )
 
     def testNoSuitableOrders(self):

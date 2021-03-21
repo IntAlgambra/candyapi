@@ -18,7 +18,7 @@
     },
     {
       "order_id": 3,
-      "weight": 5,
+      "weight": 3,
       "region": 12,
       "delivery_hours": [
         "03:00-04:00",
@@ -38,6 +38,24 @@
       "order_id": 5,
       "weight": 5,
       "region": 33,
+      "delivery_hours": [
+        "03:00-04:00",
+        "11:30-12:30"
+      ]
+    },
+    {
+      "order_id": 6,
+      "weight": 0.5,
+      "region": 12,
+      "delivery_hours": [
+        "03:00-04:00",
+        "11:30-12:30"
+      ]
+    },
+    {
+      "order_id": 7,
+      "weight": 6,
+      "region": 12,
       "delivery_hours": [
         "03:00-04:00",
         "11:30-12:30"

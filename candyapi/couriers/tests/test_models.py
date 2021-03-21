@@ -7,10 +7,14 @@ from django.utils import timezone
 from couriers.models import Courier
 from couriers.validators import CourierDataModel, CourierPatchDataModel
 from orders.models import Order, Delievery
-from orders.validators import OrderDataModel
+from orders.validators import OrderDataModel, OrderListDataModel
 from orders.logic import assign, complete_order
 from utils.models import Region, Interval
 from candyapi.utils import format_time
+
+from .orders import (COURIER_TYPE_CHANGE_ORDERS,
+                     COURIER_REGIONS_CHANGE_ORDERS,
+                     COURIER_INTERVALS_CHANGE_ORDERS)
 
 
 class TestCourier(TestCase):
@@ -86,6 +90,95 @@ class TestCourier(TestCase):
         self.assertEqual(
             Courier.objects.get(courier_id=self.test_courier_id).courier_type,
             "car"
+        )
+
+
+# noinspection DuplicatedCode
+class TestPatchCourier(TestCase):
+    """
+    Tests courier updates correctly and all orders, which can not be delieverd
+    after courier updates are being unassigned
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Tests orders are reassigned if courier type is changing
+        """
+        courier = Courier.objects.create_courier(
+            CourierDataModel(**{
+                "courier_id": 1,
+                "courier_type": "car",
+                "regions": [1, 2],
+                "working_hours": ["09:00-17:00"]
+            })
+        )
+        cls.courier_id = courier.courier_id
+
+    def testReassingAfterTypeChange(self):
+        """
+        Tests orders are correctly reassigned if courier type changed
+        """
+        Order.objects.create_from_list(
+            OrderListDataModel(**{
+                "data": COURIER_TYPE_CHANGE_ORDERS
+            })
+        )
+        assign(self.courier_id)
+        patch_data_1 = CourierPatchDataModel(**{
+            "courier_type": "bike",
+        })
+        courier = Courier.objects.get(courier_id=self.courier_id)
+        courier.update(patch_data_1)
+        courier.refresh_from_db()
+        delievery = courier.delieveries.get(completed=False)
+        self.assertEqual(
+            set([order.order_id for order in delievery.orders.all()]),
+            {2, 3, 5}
+        )
+
+    def testReassignAfterRegionChange(self):
+        """
+        Tests orders are correctly reassigned if courier regions changes
+        """
+        Order.objects.create_from_list(
+            OrderListDataModel(**{
+                "data": COURIER_REGIONS_CHANGE_ORDERS
+            })
+        )
+        assign(self.courier_id)
+        patch_data = CourierPatchDataModel(**{
+            "regions": [1],
+        })
+        courier = Courier.objects.get(courier_id=self.courier_id)
+        courier.update(patch_data)
+        courier.refresh_from_db()
+        delievery = courier.delieveries.get(completed=False)
+        self.assertEqual(
+            set([order.order_id for order in delievery.orders.all()]),
+            {1, 2}
+        )
+
+    def testReassignAfterIntervalsChange(self):
+        """
+        Tests orders are correctly reassigned if courier working hours changes
+        """
+        Order.objects.create_from_list(
+            OrderListDataModel(**{
+                "data": COURIER_INTERVALS_CHANGE_ORDERS
+            })
+        )
+        assign(self.courier_id)
+        patch_data = CourierPatchDataModel(**{
+            "working_hours": ["09:00-13:00"],
+        })
+        courier = Courier.objects.get(courier_id=self.courier_id)
+        courier.update(patch_data)
+        courier.refresh_from_db()
+        delievery = courier.delieveries.get(completed=False)
+        self.assertEqual(
+            set([order.order_id for order in delievery.orders.all()]),
+            {1, 2}
         )
 
 

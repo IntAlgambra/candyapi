@@ -7,7 +7,7 @@ from dateutil import parser
 from django.db import transaction
 
 from .models import Delievery, Order
-from .utils import construct_assign_query
+from .utils import construct_assign_query, fill_weight
 from couriers.models import Courier, Interval
 
 
@@ -23,6 +23,27 @@ class CompleteTimeError(Exception):
         )
 
 
+def select_orders(courier: Courier) -> Optional[List[Order]]:
+    """
+    Function selects orders, which can be assigned to courier by weight, region
+    and delievery time. Then function uses greedy algorithm to assign to courier
+    as many orders, as courier can carry.
+    """
+    interval_condition = construct_assign_query(list(courier.intervals.all()))
+    max_weight = Courier.WEIGHT_MAP.get(courier.courier_type)
+    suitable_orders = Order.objects.filter(
+        interval_condition,
+        delievery__isnull=True,
+        delievered=False,
+        weight__lte=max_weight,
+        region__couriers=courier
+    ).order_by("-weight")
+    if not suitable_orders.count():
+        return None
+    orders_to_assign = fill_weight(suitable_orders, max_weight)
+    return orders_to_assign
+
+
 @transaction.atomic
 def assign(courier_id: int) -> Optional[Delievery]:
     """
@@ -33,21 +54,13 @@ def assign(courier_id: int) -> Optional[Delievery]:
     if courier.delieveries.filter(completed=False).exists():
         active_delievery = courier.delieveries.get(completed=False)
         return active_delievery
-    max_weight = Courier.WEIGHT_MAP.get(courier.courier_type)
     if courier.intervals.all().count() == 0:
         return None
-    interval_condition = construct_assign_query(list(courier.intervals.all()))
-    suitable_orders = Order.objects.filter(
-        interval_condition,
-        delievery__isnull=True,
-        delievered=False,
-        weight__lte=max_weight,
-        region__couriers=courier
-    )
-    if suitable_orders.count() == 0:
+    orders = select_orders(courier)
+    if not orders:
         return None
     delievery = Delievery.objects.create_delievery(
-        orders=suitable_orders,
+        orders=orders,
         courier=courier,
     )
     return delievery

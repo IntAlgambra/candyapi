@@ -6,7 +6,7 @@ from django.db.models.query import QuerySet
 
 from .managers import CourierManager
 from .validators import CourierPatchDataModel
-from orders.utils import construct_assign_query
+from orders.utils import construct_assign_query, fill_weight
 from orders.models import Order
 from utils.models import Interval, Region
 
@@ -62,14 +62,16 @@ class Courier(models.Model):
                 list(self.intervals.all())
             )
             new_max_weight = self.WEIGHT_MAP.get(self.courier_type)
-            unfitted_orders = active_delievery.orders.exclude(
+            new_suitable_orders = active_delievery.orders.filter(
                 interval_condition,
                 region__couriers=self,
                 weight__lte=new_max_weight,
-            )
-            for order in unfitted_orders:
-                order.delievery = None
-                order.save()
+            ).order_by("-weight")
+            orders_to_keep = fill_weight(new_suitable_orders, new_max_weight)
+            for order in active_delievery.orders.filter(delievered=False):
+                if order not in orders_to_keep:
+                    order.delievery = None
+                    order.save()
         except ObjectDoesNotExist:
             pass
         finally:
