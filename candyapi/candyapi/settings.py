@@ -26,7 +26,15 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# HOST, CONFIGURED IN .env FILE
+
+DJANGO_HOST = os.getenv("DJANGO-HOST")
+
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    DJANGO_HOST
+]
 
 
 # Application definition
