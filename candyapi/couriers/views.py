@@ -16,7 +16,9 @@ from django.http.response import (HttpResponse,
 from .validators import (CouriersListDataModel,
                          CourierDataModel,
                          InvalidCouriersInDataError,
-                         CourierPatchDataModel)
+                         CourierPatchDataModel,
+                         CouriersValidationError,
+                         NoFieldsInPatchDataError)
 from .logic import create_couriers_from_list
 from .models import Courier
 from candyapi.responses import (InvalidJsonResponse,
@@ -62,6 +64,16 @@ class CouriersView(View):
             return ValidationErrorsResponse(errors={
                 "couriers": error_data
             })
+        except ValidationError:
+            return ValidationErrorsResponse(errors={
+                "schema": "invalid fields"
+            })
+        except CouriersValidationError:
+            return ValidationErrorsResponse(
+                errors={
+                    "schema": "no data field in request"
+                }
+            )
         except IntegrityError:
             return DatabaseErrorResponse("atempt to add existing courier")
 
@@ -102,6 +114,14 @@ class CourierView(View):
             data = CourierPatchDataModel(**json.loads(request.body.decode()))
             data = courier.update(data)
             return JsonResponse(data)
+        except NoFieldsInPatchDataError:
+            return ValidationErrorsResponse({
+                "schema": "no fields in patch data"
+            })
+        except ValidationError:
+            return ValidationErrorsResponse({
+                "schema": "invalid fields"
+            })
         except JSONDecodeError:
             return InvalidJsonResponse()
         except ObjectDoesNotExist:

@@ -102,6 +102,10 @@ class AssignView(View):
             return ValidationErrorsResponse({
                 "schema": "invalid data in request"
             })
+        except ObjectDoesNotExist:
+            return DatabaseErrorResponse(
+                "courier with courier_id={} does not exist".format(courier_id)
+            )
         except AttributeError:
             return ValidationErrorsResponse({
                 "courier_id": "no courier_id in request"
@@ -135,7 +139,7 @@ class CompletionView(View):
             })
         except ObjectDoesNotExist:
             return DatabaseErrorResponse(
-                "order does not exists, not assigned, or already completed"
+                "courier or order does not exist, order was never assigned, or already completed"
             )
         except CompletionValidationError:
             return ValidationErrorsResponse({

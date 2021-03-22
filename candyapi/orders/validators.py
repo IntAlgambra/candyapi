@@ -50,6 +50,15 @@ class OrderDataModel(BaseModel):
         if type(data.get("region")) != int:
             raise OrderTypeError()
 
+    @validator("order_id")
+    def validate_order_id(cls, v: int) -> int:
+        """
+        Checks if order_id is in allowed range
+        """
+        if v < 0 or v > 9223372036854775807:
+            raise ValueError("order_id out of allowed range")
+        return v
+
     @validator("weight")
     def validate_weight(cls, v):
         if v > 50 or v < 0.01:

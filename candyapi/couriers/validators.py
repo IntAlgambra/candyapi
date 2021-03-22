@@ -14,6 +14,11 @@ def validate_time_intervals(intervals: List[str], error_msg: str) -> List[str]:
     for period in intervals:
         if not re.fullmatch(pattern=pattern, string=period):
             raise ValueError(error_msg)
+        start, end = period.split("-")
+        start_minutes = int(start.split(":")[0]) * 60 + int(start.split(":")[0])
+        end_minutes = int(end.split(":")[0]) * 60 + int(end.split(":")[0])
+        if end_minutes < start_minutes:
+            raise ValueError("interval should not end earlier than starts")
     return intervals
 
 
@@ -23,6 +28,16 @@ def validate_courier_type(v: str) -> str:
             "courier_type must be car, bike or foot"
         )
     return v
+
+
+def validate_regions(regions: List[int]) -> List[int]:
+    """
+    Checks regions id's in list in allowed range
+    """
+    for region in regions:
+        if region > 2147483647 or region < 0:
+            raise ValueError("region id out of allowed range")
+    return regions
 
 
 class InvalidCouriersInDataError(PydanticValueError):
@@ -82,12 +97,28 @@ class CourierDataModel(BaseModel):
             if type(region) != int:
                 raise InvalidCourierData()
 
+    @validator("courier_id")
+    def validate_courier_id(cls, v: int) -> int:
+        """
+        Checks tht courier_id is positive and not exceeds postgres bigserial
+        """
+        if v > 9223372036854775807 or v < 0:
+            raise ValueError("courier_id out of allowed range")
+        return v
+
     @validator("courier_type")
     def validate_type(cls, v: str) -> str:
         """
         Checks if courier type is car, bike or foot and nothing else
         """
         return validate_courier_type(v)
+
+    @validator("regions")
+    def validate_regions(cls, v: List[int]) -> List[int]:
+        """
+        Checks if region id is not in allowed range
+        """
+        return validate_regions(v)
 
     @validator("working_hours")
     def validate_woring_hours(cls, v: List[str]) -> List[str]:
@@ -144,6 +175,13 @@ class CourierPatchDataModel(BaseModel):
         Validates courier type
         """
         return validate_courier_type(v)
+
+    @validator("regions")
+    def validate_regions(cls, v: List[int]) -> List[int]:
+        """
+        Checks if region id's are in allowed range
+        """
+        return validate_regions(v)
 
     @validator("working_hours")
     def validate_working_hours(cls, v: List[str]) -> List[str]:
