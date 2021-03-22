@@ -19,6 +19,9 @@ from .validators import (CouriersListDataModel,
                          CourierPatchDataModel)
 from .logic import create_couriers_from_list
 from .models import Courier
+from candyapi.responses import (InvalidJsonResponse,
+                                ValidationErrorsResponse,
+                                DatabaseErrorResponse)
 
 
 class CouriersView(View):
@@ -33,9 +36,6 @@ class CouriersView(View):
         Method sets csrf_exempt decorator for other methods
         """
         return super(CouriersView, self).dispatch(request, *args, **kwargs)
-
-    def get(self, request: HttpRequest) -> HttpResponse:
-        return HttpResponse("ok")
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """
@@ -54,32 +54,16 @@ class CouriersView(View):
                 ]}
             )
         except JSONDecodeError:
-            return JsonResponse(
-                status=400,
-                data={
-                    "validation_errors": {
-                        "common": "request body is not valid json"
-                    }
-                }
-            )
+            return InvalidJsonResponse()
         except InvalidCouriersInDataError as e:
             error_data = [
                 {"id": courier_id} for courier_id in e.invalid_couriers
             ]
-            return HttpResponseBadRequest(
-                content=json.dumps({
-                    "validation_errors": {
-                        "couriers": error_data
-                    }
-                }).encode()
-            )
+            return ValidationErrorsResponse(errors={
+                "couriers": error_data
+            })
         except IntegrityError:
-            return JsonResponse(
-                status=400,
-                data={
-                    "database_error": "can not add couriers which already exist"
-                }
-            )
+            return DatabaseErrorResponse("atempt to add existing courier")
 
 
 class CourierView(View):
@@ -103,13 +87,10 @@ class CourierView(View):
             courier = Courier.objects.get(courier_id=courier_id)
             return JsonResponse(courier.info())
         except ObjectDoesNotExist:
-            return JsonResponse(
-                status=400,
-                data={
-                    "database_error": "Courier with courier_id={} does not exist".format(
-                        courier_id
-                    )
-                }
+            return DatabaseErrorResponse(
+                "courier with courier_id={} does not exist".format(
+                    courier_id
+                )
             )
 
     def patch(self, request: HttpRequest, courier_id: int) -> HttpResponse:
@@ -122,20 +103,10 @@ class CourierView(View):
             data = courier.update(data)
             return JsonResponse(data)
         except JSONDecodeError:
-            return JsonResponse(
-                status=400,
-                data={
-                    "validation_errors": {
-                        "common": "request body is not valid json"
-                    }
-                }
-            )
+            return InvalidJsonResponse()
         except ObjectDoesNotExist:
-            return JsonResponse(
-                status=400,
-                data={
-                    "database_error": "Courier with courier_id={} does not exist".format(
-                        courier_id
-                    )
-                }
+            return DatabaseErrorResponse(
+                "courier with courier_id={} does not exist".format(
+                    courier_id
+                )
             )

@@ -14,6 +14,9 @@ from django.db import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 
 from candyapi.utils import format_time
+from candyapi.responses import (InvalidJsonResponse,
+                                DatabaseErrorResponse,
+                                ValidationErrorsResponse)
 
 from .validators import (OrderDataModel,
                          OrderListDataModel,
@@ -54,24 +57,21 @@ class OrdersView(View):
             )
         except OrdersValidationError as e:
             if e.invaid_orders:
-                return JsonResponse(
-                    status=400,
-                    data={
-                        "validation_errors": {
-                            "orders": [
-                                {
-                                    "id": error_id
-                                } for error_id in e.invaid_orders
-                            ]
-                        }
-                    }
-                )
+                return ValidationErrorsResponse({
+                    "orders": [
+                        {
+                            "id": error_id
+                        } for error_id in e.invaid_orders
+                    ]
+                })
             else:
-                return HttpResponseBadRequest("Invaid data in request")
+                return ValidationErrorsResponse({
+                    "schema": "invalid fields"
+                })
         except IntegrityError:
-            return HttpResponseBadRequest("attemt to create order which already exists")
+            return DatabaseErrorResponse("attempt to add existing order")
         except JSONDecodeError:
-            return HttpResponseBadRequest("Request body is not a valid json")
+            return InvalidJsonResponse()
 
 
 class AssignView(View):
@@ -99,11 +99,15 @@ class AssignView(View):
             }
             return JsonResponse(data=delievery_data)
         except AssignValidationError:
-            return HttpResponseBadRequest("Invalid data in request")
+            return ValidationErrorsResponse({
+                "schema": "invalid data in request"
+            })
         except AttributeError:
-            return HttpResponseBadRequest("No ocourier_id in request")
+            return ValidationErrorsResponse({
+                "courier_id": "no courier_id in request"
+            })
         except JSONDecodeError:
-            return HttpResponseBadRequest("Request body is not valid json")
+            return InvalidJsonResponse()
 
 
 class CompletionView(View):
@@ -126,16 +130,16 @@ class CompletionView(View):
                 "order_id": order.order_id
             })
         except CompleteTimeError:
-            return JsonResponse(
-                data={
-                    "error": "Order can not be completed earlier, than previos order"
-                }
-            )
+            return ValidationErrorsResponse({
+                "complete_time": "complete_time is earlier than complete_time for previous order"
+            })
         except ObjectDoesNotExist:
-            return HttpResponseBadRequest(
-                "Order does not exists, is not assigned or have been completed"
+            return DatabaseErrorResponse(
+                "order does not exists, not assigned, or already completed"
             )
         except CompletionValidationError:
-            return HttpResponseBadRequest("Invalid data in request")
+            return ValidationErrorsResponse({
+                "schema": "invalid data"
+            })
         except JSONDecodeError:
-            return HttpResponseBadRequest("Request body is not valid json")
+            return InvalidJsonResponse()
