@@ -55,7 +55,6 @@ class OrderManager(models.Manager):
         Creates new orders from orders list. Raises IntegrityError when
         attempt to add order with already existing order_id
         """
-        print(data)
         return list(map(
             self.create_order,
             data.data

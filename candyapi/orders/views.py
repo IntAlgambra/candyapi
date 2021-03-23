@@ -81,6 +81,9 @@ class AssignView(View):
         return super(AssignView, self).dispatch(request, *args, **kwargs)
 
     def post(self, request: HttpRequest) -> HttpResponse:
+        """
+        Process assigning orders to courier
+        """
         try:
             data = json.loads(request.body.decode())
             courier_id = AssignDataModel(**data).courier_id
@@ -121,6 +124,9 @@ class CompletionView(View):
         return super(CompletionView, self).dispatch(request, *args, **kwargs)
 
     def post(self, request: HttpRequest) -> HttpResponse:
+        """
+        method process adding new orders to database
+        """
         try:
             data = CompletionDataModel(
                 **json.loads(request.body.decode())
