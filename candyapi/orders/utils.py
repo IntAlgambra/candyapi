@@ -13,7 +13,7 @@ def construct_assign_query(intervals: List[Interval]) -> List:
     """
     interval_filters = []
     for interval in intervals:
-        cond = Q(intervals__start__lte=interval.end) & Q(intervals__end__gte=interval.start)
+        cond = Q(intervals__start__lt=interval.end) & Q(intervals__end__gt=interval.start)
         interval_filters.append(cond)
     condition = reduce(lambda acc, c: acc | c, interval_filters)
     return condition

@@ -81,7 +81,7 @@ class CouriersView(View):
 class CourierView(View):
     """
     Class describes views methods to process requests for single courier
-    endpoint (for example /couriers/1
+    endpoint (for example /couriers/1)
     """
 
     @method_decorator(csrf_exempt)
