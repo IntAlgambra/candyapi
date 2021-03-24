@@ -35,9 +35,6 @@ class Courier(models.Model):
     courier_type = models.CharField(max_length=4)
     regions = models.ManyToManyField(to="utils.Region", related_name="couriers")
     intervals = models.ManyToManyField(to="utils.Interval", related_name="couriers")
-    rating = models.FloatField(default=5)
-    earnings = models.FloatField(default=0)
-    last_deliver_time = models.DateTimeField(null=True)
 
     objects = CourierManager()
 
