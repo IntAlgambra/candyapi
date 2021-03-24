@@ -30,6 +30,7 @@ touch .candyapi.env
 DJANGO_SECRET_KEY=секретный ключ приложения Джанго
 POSTGRES_USER=имя пользователя в БД Postgres
 POSTGRES_PASSWORD=пароль пользователя в БД Postgres
+DJANGO_HOST=хост или ip на котором развернуто приложение
 ```
 
 4. Запускаем приложение  и производим миграции БД
@@ -71,3 +72,32 @@ docker-compose run --rm backend python manage.py test
 ```
 docker-compose -f docker-compose.dev.yml up --build
 ```
+
+## Схема базы данных приложения
+
+![Image description](candyapi_db_schema.png)
+
+## Используемые библиотеки
+
+1.  ### Django
+
+    Основной фреймворк проекта, выбран из-за наличия опыта работы с Django и удобства работы с БД 
+    через Django ORM
+
+2.  ### django-extensions
+
+    Набор инстрементов, облегчающих управление django-проектами. Используется для удобного запуска скриптов в контексте django
+
+3.  ### pydantic
+
+    Используется для валидации и структурирования входных данных
+
+4.  ### python-dateutil
+
+    Используется для парсинга времени
+
+5. ### gunicorn
+
+    wsgi сервер для деплоя приложения
+
+
