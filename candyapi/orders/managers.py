@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from typing import List
+from typing import List, Dict
 
 if TYPE_CHECKING:
     from .models import Order
@@ -50,12 +50,12 @@ class OrderManager(models.Manager):
         return order
 
     @transaction.atomic()
-    def create_from_list(self, data: OrderListDataModel) -> List[Order]:
+    def create_from_list(self, data: List[Dict]) -> List[Order]:
         """
         Creates new orders from orders list. Raises IntegrityError when
         attempt to add order with already existing order_id
         """
         return list(map(
             self.create_order,
-            data.data
+            [OrderDataModel(**order_data) for order_data in data ]
         ))

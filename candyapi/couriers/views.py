@@ -16,14 +16,13 @@ from django.http.response import (HttpResponse,
 from .validators import (CouriersListDataModel,
                          CourierDataModel,
                          InvalidCouriersInDataError,
-                         CourierPatchDataModel,
-                         CouriersValidationError,
-                         NoFieldsInPatchDataError)
+                         CourierPatchDataModel)
 from .logic import create_couriers_from_list
 from .models import Courier
 from candyapi.responses import (InvalidJsonResponse,
                                 ValidationErrorsResponse,
                                 DatabaseErrorResponse)
+from .utils import parse_errors
 
 
 class CouriersView(View):
@@ -46,34 +45,31 @@ class CouriersView(View):
         try:
             data = json.loads(request.body.decode())
             couriers = CouriersListDataModel(**data)
-            added_users = create_couriers_from_list(couriers)
+            added_couriers = create_couriers_from_list(couriers)
             return JsonResponse(
                 status=201,
                 data={"couriers": [
                     {
                         "id": courier_id
-                    } for courier_id in added_users
+                    } for courier_id in added_couriers
                 ]}
             )
         except JSONDecodeError:
             return InvalidJsonResponse()
+        except ValidationError as e:
+            errors = parse_errors(e)
+            return ValidationErrorsResponse(errors={
+                "data": {
+                    **errors
+                }
+            })
         except InvalidCouriersInDataError as e:
             error_data = [
-                {"id": courier_id} for courier_id in e.invalid_couriers
+                {**errors} for errors in e.invalid_couriers
             ]
             return ValidationErrorsResponse(errors={
                 "couriers": error_data
             })
-        except ValidationError:
-            return ValidationErrorsResponse(errors={
-                "schema": "invalid fields"
-            })
-        except CouriersValidationError:
-            return ValidationErrorsResponse(
-                errors={
-                    "schema": "no data field in request"
-                }
-            )
         except IntegrityError:
             return DatabaseErrorResponse("atempt to add existing courier")
 
@@ -114,13 +110,10 @@ class CourierView(View):
             data = CourierPatchDataModel(**json.loads(request.body.decode()))
             data = courier.update(data)
             return JsonResponse(data)
-        except NoFieldsInPatchDataError:
+        except ValidationError as e:
+            errors = parse_errors(e)
             return ValidationErrorsResponse({
-                "schema": "no fields in patch data"
-            })
-        except ValidationError:
-            return ValidationErrorsResponse({
-                "schema": "invalid fields"
+                **errors
             })
         except JSONDecodeError:
             return InvalidJsonResponse()

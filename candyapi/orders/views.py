@@ -20,15 +20,16 @@ from candyapi.responses import (InvalidJsonResponse,
 
 from .validators import (OrderDataModel,
                          OrderListDataModel,
-                         OrdersValidationError,
+                         InvalidOrdersInData,
                          AssignDataModel,
-                         AssignValidationError,
                          CompletionDataModel,
-                         CompletionValidationError)
+                         CompletionValidationError,)
 from .models import Order
 from .logic import (assign,
                     complete_order,
                     CompleteTimeError)
+
+from couriers.utils import parse_errors
 
 
 class OrdersView(View):
@@ -44,7 +45,7 @@ class OrdersView(View):
         try:
             data = json.loads(request.body.decode())
             orders_list = OrderListDataModel(**data)
-            orders = Order.objects.create_from_list(orders_list)
+            orders = Order.objects.create_from_list(orders_list.data)
             return JsonResponse(
                 status=201,
                 data={
@@ -55,19 +56,20 @@ class OrdersView(View):
                     ]
                 }
             )
-        except OrdersValidationError as e:
-            if e.invaid_orders:
-                return ValidationErrorsResponse({
-                    "orders": [
-                        {
-                            "id": error_id
-                        } for error_id in e.invaid_orders
-                    ]
-                })
-            else:
-                return ValidationErrorsResponse({
-                    "schema": "invalid fields"
-                })
+        except InvalidOrdersInData as e:
+            error_data = [
+                {**errors} for errors in e.invaid_orders
+            ]
+            return ValidationErrorsResponse(errors={
+                "order": error_data
+            })
+        except ValidationError as e:
+            errors = parse_errors(e)
+            return ValidationErrorsResponse(errors={
+                "data": {
+                    **errors
+                }
+            })
         except IntegrityError:
             return DatabaseErrorResponse("attempt to add existing order")
         except JSONDecodeError:
@@ -101,18 +103,15 @@ class AssignView(View):
                 "assign_time": format_time(delievery.assigned_time)
             }
             return JsonResponse(data=delievery_data)
-        except AssignValidationError:
+        except ValidationError as e:
+            errors = parse_errors(e)
             return ValidationErrorsResponse({
-                "schema": "invalid data in request"
+                **errors
             })
         except ObjectDoesNotExist:
             return DatabaseErrorResponse(
                 "courier with courier_id={} does not exist".format(courier_id)
             )
-        except AttributeError:
-            return ValidationErrorsResponse({
-                "courier_id": "no courier_id in request"
-            })
         except JSONDecodeError:
             return InvalidJsonResponse()
 
@@ -139,17 +138,14 @@ class CompletionView(View):
             return JsonResponse(data={
                 "order_id": order.order_id
             })
-        except CompleteTimeError:
+        except ValidationError as e:
+            errors = parse_errors(e)
             return ValidationErrorsResponse({
-                "complete_time": "complete_time is earlier than complete_time for previous order"
+                **errors
             })
         except ObjectDoesNotExist:
             return DatabaseErrorResponse(
                 "courier or order does not exist, order was never assigned, or already completed"
             )
-        except CompletionValidationError:
-            return ValidationErrorsResponse({
-                "schema": "invalid data"
-            })
         except JSONDecodeError:
             return InvalidJsonResponse()

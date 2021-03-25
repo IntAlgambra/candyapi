@@ -5,9 +5,9 @@ from django.test import SimpleTestCase
 from pydantic import ValidationError
 
 from orders.validators import (OrderDataModel,
-                               OrderTypeError,
+                               InvalidOrderData,
                                OrderListDataModel,
-                               OrdersValidationError,
+                               InvalidOrdersInData,
                                CompletionDataModel)
 
 
@@ -40,19 +40,19 @@ class TestOrderDataModel(SimpleTestCase):
             "region": 22,
             "delivery_hours": ["12:44-13:50", "14:00-16:30"]
         }
-        with self.assertRaises(OrderTypeError):
+        with self.assertRaises(InvalidOrderData):
             invalid_id_data = {
                 **order_data,
                 "order_id": 42.12
             }
             OrderDataModel(**invalid_id_data)
-        with self.assertRaises(OrderTypeError):
+        with self.assertRaises(InvalidOrderData):
             invalid_weight_data = {
                 **order_data,
                 "weight": "13.23"
             }
             OrderDataModel(**invalid_weight_data)
-        with self.assertRaises(OrderTypeError):
+        with self.assertRaises(InvalidOrderData):
             invalid_region_data = {
                 **order_data,
                 "region": 12.23
@@ -98,12 +98,12 @@ class TestOrderListDataModel(SimpleTestCase):
         """
         invalid_data_1 = deepcopy(self.TEST_DATA)
         invalid_data_1["stuff"] = "stuff"
-        with self.assertRaises(OrdersValidationError):
+        with self.assertRaises(InvalidOrdersInData):
             OrderListDataModel(**invalid_data_1)
         invalid_data_2 = {
             "new_stuff": "new_stuff"
         }
-        with self.assertRaises(OrdersValidationError):
+        with self.assertRaises(InvalidOrdersInData):
             OrderListDataModel(**invalid_data_2)
 
     def testInvalidOrder(self):
@@ -117,7 +117,7 @@ class TestOrderListDataModel(SimpleTestCase):
             "region": 12,
             "delivery_hours": ["invalid"]
         })
-        with self.assertRaises(OrdersValidationError) as context:
+        with self.assertRaises(InvalidOrdersInData) as context:
             OrderListDataModel(**invalid_data)
         self.assertEqual(
             context.exception.invaid_orders,
