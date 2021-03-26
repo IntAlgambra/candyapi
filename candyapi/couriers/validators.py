@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import re
 
 from pydantic import (BaseModel,
@@ -53,7 +53,7 @@ class InvalidIntervalError(PydanticValueError):
 
 def validate_courier_type(v: str) -> str:
     if v not in ["foot", "car", "bike"]:
-        raise InvalidCourierData(courier_type="must be car, foot or bile")
+        raise InvalidCourierData(courier_type="must be car, foot or bike")
     return v
 
 
@@ -62,8 +62,12 @@ def validate_regions(regions: List[int]) -> List[int]:
     Checks regions id's in list in allowed range
     """
     for region in regions:
+        if type(region) != int:
+            raise InvalidCourierData(regions="region must be integer")
         if region > 2147483647 or region < 0:
             raise InvalidCourierData(regions="region is out of range")
+    if len(set(regions)) < len(regions):
+        raise InvalidCourierData(regions="no duplicates allowed")
     return regions
 
 
@@ -84,37 +88,26 @@ def validate_time_intervals(intervals: List[str]) -> List[str]:
 class CourierDataModel(BaseModel):
     """
     Describes courier data model, which will be used to validate
-    input json data
+    input json data.
     """
 
-    courier_id: int
+    # For courier_id and regions type is checked manually in validators
+    # so we declare them as Any to prevent pydantic to automatically
+    # convert in with int() function
+    courier_id: Any
     courier_type: str
-    regions: List[int]
+    regions: List[Any]
     working_hours: List[str]
 
-    def __init__(self, **data):
-        if type(data.get("courier_id")) != int:
-            # Здесь небольшой костыль, котрый нужно прокомментировать
-            # библиотека pydantic очень удобная, но я слишком поздно понял
-            # что она конвертирует данные и, например, float преобразует в int неявно
-            # поэтому там, где это критично, нужно проверять сырую data в __init__
-            # Но для корректной проверки остальных  полей, прямо здесь вызывать исключениие нельзя
-            # Поэтому в случае, если courier_id или region не являются типом int
-            # преобразуем их в строку в кавычках. В таком случае, они автоматом провалят валидацию
-            # которая встроена в pydantic и попадут в список некорректных полей
-            # и так как region_id по условию гарантировано присутствует, то можно не обрабатывать его
-            # отсутствие
-            data["courier_id"] = '"{}"'.format(data.get("courier_id"))
-        for region in data.get("regions", []):
-            if type(region) != int:
-                region = '"{}"'.format(region)
-        super(CourierDataModel, self).__init__(**data)
-
-    @validator("courier_id")
+    @validator("courier_id", always=True)
     def validate_courier_id(cls, v: int) -> int:
         """
         Checks tht courier_id is positive and not exceeds postgres bigserial
         """
+        if not v:
+            raise InvalidCourierData(courier_id="courier_id is required")
+        if type(v) != int:
+            raise InvalidCourierData(courier_id="courier_id must be integer")
         if v > 9223372036854775807 or v < 0:
             raise InvalidCourierData(courier_id="courier_id out of allowed range")
         return v
@@ -166,19 +159,8 @@ class CourierPatchDataModel(BaseModel):
     Describes data model for patch courier data
     """
     courier_type: Optional[str] = None
-    regions: Optional[List[int]] = None
+    regions: Optional[List[Any]] = None
     working_hours: Optional[List[str]] = None
-
-    def __init__(self, **data):
-        """
-        Checks if at least one field is provided
-        If new regions field is provided, checks if all region are
-        integers
-        """
-        for region in data.get("regions", []):
-            if type(region) != int:
-                region = '"{}"'.format(region)
-        super(CourierPatchDataModel, self).__init__(**data)
 
     @validator("courier_type")
     def validate_type(cls, v: str) -> str:
@@ -220,7 +202,7 @@ class CourierPatchDataModel(BaseModel):
             )
         if not possible_fields.intersection(set(values.keys())):
             raise DataFieldsError(
-                required="courier_type, worling_hours or regions required"
+                required="courier_type, working_hours or regions required"
             )
         return values
 
@@ -258,8 +240,7 @@ class CouriersListDataModel(BaseModel):
         excess_fields = set(values.keys()).difference({"data"})
         missed_fields = {"data"}.difference(set(values))
         if excess_fields or missed_fields:
-            raise DataFieldsError(
-                excess="excess fields: {}".format(", ".join(excess_fields)),
-                reqired="missig required fields: {}".format(", ".join(missed_fields))
+            raise ValueError(
+                "excess fields: {}".format(", ".join(excess_fields))
             )
         return values

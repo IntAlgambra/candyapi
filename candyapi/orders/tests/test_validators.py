@@ -40,19 +40,19 @@ class TestOrderDataModel(SimpleTestCase):
             "region": 22,
             "delivery_hours": ["12:44-13:50", "14:00-16:30"]
         }
-        with self.assertRaises(InvalidOrderData):
+        with self.assertRaises(ValidationError):
             invalid_id_data = {
                 **order_data,
                 "order_id": 42.12
             }
             OrderDataModel(**invalid_id_data)
-        with self.assertRaises(InvalidOrderData):
+        with self.assertRaises(ValidationError):
             invalid_weight_data = {
                 **order_data,
                 "weight": "13.23"
             }
             OrderDataModel(**invalid_weight_data)
-        with self.assertRaises(InvalidOrderData):
+        with self.assertRaises(ValidationError):
             invalid_region_data = {
                 **order_data,
                 "region": 12.23
@@ -96,15 +96,10 @@ class TestOrderListDataModel(SimpleTestCase):
         """
         Tests there is only data field
         """
-        invalid_data_1 = deepcopy(self.TEST_DATA)
-        invalid_data_1["stuff"] = "stuff"
-        with self.assertRaises(InvalidOrdersInData):
-            OrderListDataModel(**invalid_data_1)
-        invalid_data_2 = {
-            "new_stuff": "new_stuff"
-        }
-        with self.assertRaises(InvalidOrdersInData):
-            OrderListDataModel(**invalid_data_2)
+        invalid_data = deepcopy(self.TEST_DATA)
+        invalid_data["stuff"] = "stuff"
+        with self.assertRaises(ValidationError):
+            OrderListDataModel(**invalid_data)
 
     def testInvalidOrder(self):
         """
@@ -119,8 +114,9 @@ class TestOrderListDataModel(SimpleTestCase):
         })
         with self.assertRaises(InvalidOrdersInData) as context:
             OrderListDataModel(**invalid_data)
+        invalid_ids = [order.get('id') for order in context.exception.invaid_orders]
         self.assertEqual(
-            context.exception.invaid_orders,
+            invalid_ids,
             [13]
         )
 

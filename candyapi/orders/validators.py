@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import re
 
 from pydantic import (BaseModel,
@@ -31,43 +31,55 @@ class AssignExcessFieldError(PydanticTypeError):
     msg_template = "excess field in assign data"
 
 
-class CompletionValidationError(PydanticTypeError):
-    code = "eror_in_completion_data"
-    msg_template = "errors in completion data"
+class CompletionExcessFieldsError(PydanticTypeError):
+    code = "excess_fields_in_completion_data"
+    msg_template = "excess fields in completion data"
 
 
+# noinspection PyMethodParameters
 class OrderDataModel(BaseModel):
-    order_id: int
-    weight: float
-    region: int
+    order_id: Any
+    weight: Any
+    region: Any
     delivery_hours: List[str]
 
-    def __init__(self, **data):
-        if type(data.get("order_id")) != int:
-            data["order_id"] = '"{}"'.format(data.get("order_id"))
-        if not (type(data.get("weight")) == int or type(data.get("weight")) == float):
-            data["weight"] = '"{}"'.format(data.get("weight"))
-        if type(data.get("region")) != int:
-            data["region"] = '"{}"'.format(data.get("region"))
-        super(OrderDataModel, self).__init__(**data)
-
-    @validator("order_id")
+    @validator("order_id", always=True)
     def validate_order_id(cls, v: int) -> int:
         """
         Checks if order_id is in allowed range
         """
+        if not v:
+            raise InvalidOrderData(order_id="order_id is required")
+        if type(v) != int:
+            raise InvalidOrderData(order_id="order_id must be integer")
         if v < 0 or v > 9223372036854775807:
             raise InvalidOrderData(order_id="order_id out of allowed range")
         return v
 
-    @validator("weight")
+    @validator("region", always=True)
+    def validate_region(cls, v):
+        if not v:
+            raise InvalidOrderData(region="region is required")
+        if type(v) != int:
+            raise InvalidOrderData(region="region must be integer")
+        if v > 2147483647 or v < 0:
+            raise InvalidOrderData(region="region out of range")
+        return v
+
+    @validator("weight", always=True)
     def validate_weight(cls, v):
+        if not v:
+            raise InvalidOrderData(weight="weight is required")
+        if type(v) != int and type(v) != float:
+            raise InvalidOrderData(weight="weight must be integer or float")
         if v > 50 or v < 0.01:
             raise InvalidOrderData(weight="weight out of limit")
         return v
 
     @validator("delivery_hours")
     def validate_delivery_hours(cls, v):
+        if not v:
+            raise InvalidOrderData(delievery_hours="at least one interval required")
         return validate_time_intervals(
             intervals=v,
         )
@@ -85,6 +97,7 @@ class OrderDataModel(BaseModel):
         return values
 
 
+# noinspection PyMethodParameters
 class OrderListDataModel(BaseModel):
     data: List[Dict]
 
@@ -107,29 +120,27 @@ class OrderListDataModel(BaseModel):
     @root_validator(pre=True)
     def validate_no_excess_fields(cls, values: Dict) -> Dict:
         excess_fields = set(values.keys()).difference({"data"})
-        missed_fields = {"data"}.difference(set(values))
-        if excess_fields or missed_fields:
-            raise DataFieldsError(
-                excess="excess fields: {}".format(", ".join(excess_fields)),
-                reqired="missig required fields: {}".format(", ".join(missed_fields))
+        if excess_fields:
+            raise ValueError(
+                "excess fields: {}".format(", ".join(excess_fields)),
             )
         return values
 
 
+# noinspection PyMethodParameters
 class AssignDataModel(BaseModel):
     """
     Describes data, required to assign orders to courier
     """
 
-    courier_id: int
+    courier_id: Any
 
-    def __init__(self, **data):
-        if type(data.get("courier_id")) != int and data.get("courier_id"):
-            data["courier_id"] = '"{}"'.format(data.get("courier_id"))
-        super(AssignDataModel, self).__init__(**data)
-
-    @validator("courier_id")
+    @validator("courier_id", always=True)
     def validate_courier_id(cls, v: int) -> int:
+        if not v:
+            raise ValueError("courier_id is required")
+        if type(v) != int:
+            raise ValueError("courier_id must be integer")
         if v < 0 or v > 9223372036854775807:
             raise ValueError("courier_id out of allowed range")
         return v
@@ -149,27 +160,28 @@ class CompletionDataModel(BaseModel):
     """
     Describes data, required to complete order
     """
-    courier_id: int
-    order_id: int
+    courier_id: Any
+    order_id: Any
     complete_time: str
 
-    def __init__(self, **data):
-        if type(data.get("courier_id")) != int:
-            data["courier_id"] = '"{}"'.format(data.get("courier_id"))
-        if type(data.get("order_id")) != int:
-            data["order_id"] = '"{}"'.format(data.get("order_id"))
-        super(CompletionDataModel, self).__init__(**data)
-
-    @validator("courier_id")
+    @validator("courier_id", always=True)
     def validate_courier_id(cls, v: int) -> int:
-        if v < 0:
-            raise CompletionValidationError()
+        if not v:
+            raise ValueError("courier_id is required")
+        if type(v) != int:
+            raise TypeError("courier_id must be integer")
+        if v > 9223372036854775807 or v < 0:
+            raise ValueError("courier_id out of allowed range")
         return v
 
-    @validator("order_id")
+    @validator("order_id", always=True)
     def validate_order_id(cls, v: int) -> int:
-        if v < 0:
-            raise CompletionValidationError()
+        if not v:
+            raise ValueError("order_id is required")
+        if type(v) != int:
+            raise TypeError("order_id must be integer")
+        if v > 9223372036854775807 or v < 0:
+            raise ValueError("order_id out of allowed range")
         return v
 
     @validator("complete_time")
@@ -188,7 +200,7 @@ class CompletionDataModel(BaseModel):
         required_fields = {"courier_id", "order_id", "complete_time"}
         excess_fields = set(values.keys()).difference(required_fields)
         if excess_fields:
-            CompletionDataModel(
-                excess="excess fields: {}".format(", ".join(excess_fields))
+            raise ValueError(
+                "excess fields: {}".format(", ".join(excess_fields))
             )
         return values

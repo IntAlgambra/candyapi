@@ -22,8 +22,7 @@ from .validators import (OrderDataModel,
                          OrderListDataModel,
                          InvalidOrdersInData,
                          AssignDataModel,
-                         CompletionDataModel,
-                         CompletionValidationError,)
+                         CompletionDataModel)
 from .models import Order
 from .logic import (assign,
                     complete_order,
@@ -146,6 +145,10 @@ class CompletionView(View):
         except ObjectDoesNotExist:
             return DatabaseErrorResponse(
                 "courier or order does not exist, order was never assigned, or already completed"
+            )
+        except CompleteTimeError:
+            return DatabaseErrorResponse(
+                "comple_time can not be earlier than previos order complete_time (or assigned_time)"
             )
         except JSONDecodeError:
             return InvalidJsonResponse()

@@ -6,8 +6,7 @@ from couriers.validators import (CourierDataModel,
                                  CouriersListDataModel,
                                  InvalidCouriersInDataError,
                                  InvalidCourierData,
-                                 CourierPatchDataModel,
-                                 CouriersValidationError)
+                                 CourierPatchDataModel)
 
 
 class TestCourierDataModel(SimpleTestCase):
@@ -35,7 +34,7 @@ class TestCourierDataModel(SimpleTestCase):
         with self.assertRaises(ValidationError) as context:
             CourierDataModel(**excess_field)
         self.assertIn(
-            "No extra fields allowed",
+            "excess=excess fields: favorite_movies",
             context.exception.__str__()
         )
 
@@ -51,7 +50,7 @@ class TestCourierDataModel(SimpleTestCase):
         }
         with self.assertRaises(ValidationError) as context:
             CourierDataModel(**invalid_courier)
-        self.assertIn("working hours interval must be in format hh:mm-hh:mm",
+        self.assertIn("interval=wrong interval format",
                       context.exception.__str__())
 
     def testInvalidCourierType(self):
@@ -66,7 +65,7 @@ class TestCourierDataModel(SimpleTestCase):
         }
         with self.assertRaises(ValidationError) as context:
             CourierDataModel(**invalid_courier)
-        self.assertIn("courier_type must be car, bike or foot",
+        self.assertIn("courier_type=must be car, foot or bike",
                       context.exception.__str__())
 
     def testInvalidCourierId(self):
@@ -79,8 +78,10 @@ class TestCourierDataModel(SimpleTestCase):
             "regions": [1, 12, 22],
             "working_hours": ["11:35-14:05", "09:00-11:54"]
         }
-        with self.assertRaises(InvalidCourierData) as context:
+        with self.assertRaises(ValidationError) as context:
             CourierDataModel(**invalid_courier)
+        self.assertIn("courier_id=courier_id must be integer",
+                      context.exception.__str__())
 
     def testInvalidRegionNumber(self):
         """
@@ -93,8 +94,10 @@ class TestCourierDataModel(SimpleTestCase):
             "regions": [1, 12.3, 22],
             "working_hours": ["11:35-14:05", "09:00-11:54"]
         }
-        with self.assertRaises(InvalidCourierData) as context:
+        with self.assertRaises(ValidationError) as context:
             CourierDataModel(**invalid_courier)
+        self.assertIn("regions=region must be integer",
+                      context.exception.__str__())
 
 
 class CouriersListDataModelTest(SimpleTestCase):
@@ -126,8 +129,7 @@ class CouriersListDataModelTest(SimpleTestCase):
         """
         try:
             CouriersListDataModel(**self.TEST_DATA)
-        except ValidationError as e:
-            print(e.errors())
+        except ValidationError:
             self.fail("exception in couriers list data model creation")
 
     def testExcessField(self):
@@ -141,7 +143,7 @@ class CouriersListDataModelTest(SimpleTestCase):
         with self.assertRaises(ValidationError) as context:
             CouriersListDataModel(**extra_fields_data)
         self.assertIn(
-            "No excess fields allowed",
+            "excess",
             context.exception.__str__()
         )
 
@@ -149,7 +151,7 @@ class CouriersListDataModelTest(SimpleTestCase):
         invalid_data = {
             "stuff": "some stuff"
         }
-        with self.assertRaises(CouriersValidationError):
+        with self.assertRaises(ValidationError):
             CouriersListDataModel(**invalid_data)
 
     def testInvalidCourier(self):
@@ -159,9 +161,10 @@ class CouriersListDataModelTest(SimpleTestCase):
         data_with_invalid_user["data"][2]["regions"] = [1.3, 3, 4]
         with self.assertRaises(InvalidCouriersInDataError) as context:
             CouriersListDataModel(**data_with_invalid_user)
-        self.assertIn(1, context.exception.invalid_couriers)
-        self.assertIn(1.2, context.exception.invalid_couriers)
-        self.assertIn(3, context.exception.invalid_couriers)
+        invalid_ids = [error.get("id") for error in context.exception.invalid_couriers]
+        self.assertIn(1, invalid_ids)
+        self.assertIn(1.2, invalid_ids)
+        self.assertIn(3, invalid_ids)
 
 
 class CourierPatchDataModelTest(SimpleTestCase):

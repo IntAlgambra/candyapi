@@ -17,4 +17,4 @@ def format_time(t: datetime) -> str:
     """
     if t.tzname() != "UTC":
         raise WrongTimezoneError()
-    return "{}{}".format(t.isoformat()[:-10], "Z")
+    return "{}{}".format(t.isoformat(timespec="microseconds")[:-10], "Z")

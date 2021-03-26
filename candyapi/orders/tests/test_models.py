@@ -49,7 +49,7 @@ class OrderModelTest(TestCase):
             ]
         }
         orders_list = OrderListDataModel(**orders_data)
-        orders = Order.objects.create_from_list(orders_list)
+        orders = Order.objects.create_from_list(orders_list.data)
         self.assertEqual(len(orders), 3)
 
     def testAttemptToCreateExistingOrder(self):
@@ -72,7 +72,7 @@ class OrderModelTest(TestCase):
                 },
             ]
         }
-        Order.objects.create_from_list(OrderListDataModel(**order_data_1))
+        Order.objects.create_from_list(OrderListDataModel(**order_data_1).data)
         order_data_2 = {
             "data": [
                 {
@@ -84,7 +84,5 @@ class OrderModelTest(TestCase):
             ]
         }
         with self.assertRaises(IntegrityError):
-            Order.objects.create_from_list(OrderListDataModel(**order_data_2))
+            Order.objects.create_from_list(OrderListDataModel(**order_data_2).data)
 
-class DelieveryModeltest(TestCase):
-    pass

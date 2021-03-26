@@ -122,7 +122,7 @@ class TestPatchCourier(TestCase):
         Order.objects.create_from_list(
             OrderListDataModel(**{
                 "data": COURIER_TYPE_CHANGE_ORDERS
-            })
+            }).data
         )
         assign(self.courier_id)
         patch_data_1 = CourierPatchDataModel(**{
@@ -144,7 +144,7 @@ class TestPatchCourier(TestCase):
         Order.objects.create_from_list(
             OrderListDataModel(**{
                 "data": COURIER_REGIONS_CHANGE_ORDERS
-            })
+            }).data
         )
         assign(self.courier_id)
         patch_data = CourierPatchDataModel(**{
@@ -166,7 +166,7 @@ class TestPatchCourier(TestCase):
         Order.objects.create_from_list(
             OrderListDataModel(**{
                 "data": COURIER_INTERVALS_CHANGE_ORDERS
-            })
+            }).data
         )
         assign(self.courier_id)
         patch_data = CourierPatchDataModel(**{

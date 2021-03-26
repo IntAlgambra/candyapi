@@ -76,9 +76,9 @@ def complete_order(courier_id: int,
     """
     courier = Courier.objects.get(courier_id=courier_id)
     delievery = courier.delieveries.get(completed=False)
+    order = delievery.orders.filter(delievered=False).get(order_id=order_id)
     if parser.isoparse(complete_time) <= delievery.last_delievery_time:
         raise CompleteTimeError()
-    order = delievery.orders.filter(delievered=False).get(order_id=order_id)
     order.complete(
         datetime_string=complete_time,
         start_time=delievery.last_delievery_time
