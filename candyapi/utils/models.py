@@ -5,8 +5,8 @@ from .managers import RegionManager, IntervalManager
 class Region(models.Model):
     """
     Класс описывает модель данных регионов
-    fields:
-        region_id (int): region identifier
+    поля:
+        region_id (int): идентификатор региона
     """
     region_id = models.IntegerField(primary_key=True, unique=True)
     objects = RegionManager()
@@ -14,10 +14,10 @@ class Region(models.Model):
 
 class Interval(models.Model):
     """
-    Class describes model of time interval data
-    fields:
-        start (int): seconds from 00:00
-        end (int): seconds from 00:00
+    Описывает модель интервалов (раоты курьера или доставки заказа)
+    поля:
+        start (int): начало в секундах от 00:00
+        end (int): окончание в секундах от 00:00
     """
 
     class Meta:

@@ -13,8 +13,8 @@ from couriers.models import Courier, Interval
 
 class CompleteTimeError(Exception):
     """
-    Raised if there is attempt to complete order earlier,
-    than previous order was completed
+    Возуждается при попытке завершить заказ ранее, чем был завершен
+    предыдущий заказ из развоза
     """
 
     def __init__(self):
@@ -25,9 +25,8 @@ class CompleteTimeError(Exception):
 
 def select_orders(courier: Courier) -> Optional[List[Order]]:
     """
-    Function selects orders, which can be assigned to courier by weight, region
-    and delievery time. Then function uses greedy algorithm to assign to courier
-    as many orders, as courier can carry.
+    Выбирает заказы, подходящие курьеру по весу, размеру, региону ии времени
+    доставки. Затем из подходящих заказов набирает те, которые курьер может развезти
     """
     interval_condition = construct_assign_query(list(courier.intervals.all()))
     max_weight = Courier.WEIGHT_MAP.get(courier.courier_type)
@@ -47,8 +46,10 @@ def select_orders(courier: Courier) -> Optional[List[Order]]:
 @transaction.atomic
 def assign(courier_id: int) -> Optional[Delievery]:
     """
-    Function creates new delivery, assigns it to courier and add to this delivery
-    all suitable orders. If couriers alredy has active delievery, returns it
+    Если курьеру назначена активная доставка (разво). возвращает ее. Если
+    доставка не назначена, выбирает для курьера подходящие заказы и создает
+    новую доставку, назначает ее курьеру и доавляет заказы. В случае,
+    если подходящих заказов нет, возвращает None
     """
     courier = Courier.objects.get(courier_id=courier_id)
     if courier.delieveries.filter(completed=False).exists():
@@ -71,8 +72,8 @@ def complete_order(courier_id: int,
                    order_id: int,
                    complete_time: str) -> Order:
     """
-    Completes order with order_id and updaes delievery last_delievery_time. If
-    there is no uncompleted orders in delievery, completes delievery as well
+    Завершает заказ и обновляет время последней доставки в активном развозе.
+    Если все заказы в развозе выполнены, завершает развоз
     """
     courier = Courier.objects.get(courier_id=courier_id)
     delievery = courier.delieveries.get(completed=False)

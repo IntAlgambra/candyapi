@@ -7,7 +7,7 @@ class RegionManager(models.Manager):
 
     def create_region(self, region_id: int):
         """
-        Creates new region and returns it.
+        Создает новый регион и возвращает его
         """
         region = self.model(region_id=region_id)
         region.save()
@@ -15,8 +15,8 @@ class RegionManager(models.Manager):
 
     def create_or_find(self, region_id: int):
         """
-        Creates region with region_id if there isn't one in the database and returns it.
-        If there is, just returns it
+        Если в БД есть регион с переданный id, возвращает его. Если нет,
+        создает и возвращает
         """
         try:
             return self.get(region_id=region_id)
@@ -25,8 +25,7 @@ class RegionManager(models.Manager):
 
     def create_from_list(self, regions: List[int]):
         """
-        Creates non-existing regions from list and returns list of
-        created and found regions
+        Возвращает список регионов, создавая недостающие
         """
         return list(
             map(
@@ -40,6 +39,10 @@ class IntervalManager(models.Manager):
 
     @staticmethod
     def interval_string_to_start_end(interval_string: str) -> (int, int):
+        """
+        Трансформирует строку формата hh:mm описывающую интервал в
+        начало и конец интервала в секундах от 00:00
+        """
         start, end = interval_string.split("-")
         start_hours, start_minutes = list(
             map(
@@ -59,7 +62,7 @@ class IntervalManager(models.Manager):
 
     def create_interval(self, interval_string: str):
         """
-        Creates time interval.
+        Создает интервал по переданной строке
         """
 
         start_seconds, end_seconds = self.interval_string_to_start_end(
@@ -74,8 +77,8 @@ class IntervalManager(models.Manager):
 
     def create_or_find(self, interval_string):
         """
-        Creates interval from start to end if there isn't one in database.
-        If there is, just returns it
+        Если такой интервал уже есть в БД, возвращает. В противном случае,
+        создает и возвращает
         """
         try:
             start_seconds, end_seconds = self.interval_string_to_start_end(
@@ -87,6 +90,7 @@ class IntervalManager(models.Manager):
             return interval
 
     def create_from_list(self, intervals: List[str]):
+        """Создает интервалы из списка"""
         return list(
             map(
                 self.create_or_find,

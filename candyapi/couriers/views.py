@@ -27,20 +27,19 @@ from .utils import parse_errors
 
 class CouriersView(View):
     """
-    Class describes views methods for processing requests
-    to /couriers (only for all couriers)
+    Обрабатывает запросы к /couriers
     """
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
         """
-        Method sets csrf_exempt decorator for other methods
+        Устанавливает игнорирование csrf защиты (в нашем случае не нужна)
         """
         return super(CouriersView, self).dispatch(request, *args, **kwargs)
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """
-        View process request for adding new couriers to database
+        Обрабатывает запрос на добавление курьеров
         """
         try:
             data = json.loads(request.body.decode())
@@ -76,8 +75,7 @@ class CouriersView(View):
 
 class CourierView(View):
     """
-    Class describes views methods to process requests for single courier
-    endpoint (for example /couriers/1)
+    Обрабатывает запросы к /couriers/{courier_id}
     """
 
     @method_decorator(csrf_exempt)
@@ -89,7 +87,8 @@ class CourierView(View):
 
     def get(self, request: HttpRequest, courier_id: int) -> HttpResponse:
         """
-        Process request for courier info and statistics
+        Обрабатывает запрос на получение информации о курьере. Если в
+        courier_id будет передан не int, вернет 404
         """
         try:
             courier = Courier.objects.get(courier_id=courier_id)
@@ -103,7 +102,7 @@ class CourierView(View):
 
     def patch(self, request: HttpRequest, courier_id: int) -> HttpResponse:
         """
-        View process request for modifying courier data
+        Обрабатывает запрос на обновление курьера
         """
         try:
             courier = Courier.objects.get(courier_id=courier_id)

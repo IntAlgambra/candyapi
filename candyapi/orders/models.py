@@ -8,9 +8,15 @@ from .managers import OrderManager, DelieveryManager
 
 class Delievery(models.Model):
     """
-    Model describes set of orders assigned to courier via
-    one request to /orders/assign. Courier earnings depends
-    on how much Delieveres (Развоз) courier has complete
+    Модель описывает таблицу Развозов (Доставок), создаваемых
+    при назначении курьеру заказов
+    поля:
+        assigned_time: время создания развоза
+        last_delievery_time: время завершения последнего на данный момент
+            заказа из развоза. Еси таковых нет, равняется assigned_time
+        courier: ссылка на курьера, которому назначен развоз
+        completed: флаг, обозначающий завершен ли развоз
+        transport_type: тип курьера на момент назначния развоза
     """
     assigned_time = models.DateTimeField()
     last_delievery_time = models.DateTimeField()
@@ -24,7 +30,16 @@ class Delievery(models.Model):
 
 class Order(models.Model):
     """
-    Model describes order instance in database
+    Описывает таблицу заказов в БД
+    поля:
+        order_id: идентификатор и первичный ключ
+        weight: вес заказа
+        region: регион заказа
+        intervals: интервалы, в которые может быть принята доставка
+        delievered: флаг, обозначающий завершен ли заказ
+        delievery_time: время завершения заказа
+        completion_time: время, за которео был завершен заказ в секундах
+        delievery: развоз, к которому принадлежит заказ
     """
     order_id = models.IntegerField(primary_key=True, unique=True)
     weight = models.FloatField()
@@ -47,7 +62,7 @@ class Order(models.Model):
 
     def complete(self, datetime_string: str, start_time: datetime) -> None:
         """
-        Process order completion
+        Завершает развоз
         """
         complete_time = dateutil.parser.isoparse(datetime_string)
         self.delievered = True

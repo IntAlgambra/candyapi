@@ -14,12 +14,10 @@ from utils.models import Interval, Region
 class Courier(models.Model):
     """
     Класс описывает модель данных курьеров
-    fields:
-        courier_id (int): courier identifier
-        courier_type (str): courier type, can be foot, bike or car
-        regions: links to regions courier can serve
-        rating (float): courier rating
-        earnings (float): courier earnings
+    поля:
+        courier_id (int): идентификатор курьера
+        courier_type (str): тип курьера, может быть foot, bike или car
+        regions: регионы, в которых работает курьер (ссылка на таблицу с регионами)
     """
     WEIGHT_MAP = {
         "foot": 10,
@@ -40,9 +38,10 @@ class Courier(models.Model):
 
     def update(self, data: CourierPatchDataModel):
         """
-        Updates courier data. If courier has active delievery, checks if there are
-        orders, whick courier can not deliever after changes. If there are,
-        unassignes these orders.
+        Обновляет данные курьера и проверяет, назначена ли курьеру активная доставка (развоз).
+        Если активная доставка присутствует, проверяет, все ли заказы из доставки курьер
+        может развести. Если нет, те заказы, которые курьер теперь развезти не может
+        попадают в пул свободных к выдаче
         """
         if data.courier_type:
             self.courier_type = data.courier_type
@@ -76,7 +75,7 @@ class Courier(models.Model):
 
     def calculate_earnings(self) -> int:
         """
-        Calculates courier earnings based on completed delieveries
+        Рассчитывает заработок курьера
         """
         delieveres = self.delieveries.filter(completed=True)
         return sum([
@@ -86,8 +85,8 @@ class Courier(models.Model):
 
     def _calc_mean_delievery_time(self, region_id: int) -> float:
         """
-        Calculates mean delievery time for region with
-        provided region id
+        Рассчитывает среднее время доставки курьера по региону с
+        переданным region_id
         """
         completed_orders = Order.objects.filter(
             delievery__courier__courier_id=self.courier_id,
@@ -101,8 +100,8 @@ class Courier(models.Model):
 
     def calculate_rating(self) -> float:
         """
-        Calculates courier rating. If courier doesn't have
-        any completed orders yet, returns -1
+        Рассчитывает рейтинг курьера. Если у курьера пока нет заверенных
+        заказов, возвращает -1
         """
         # selects all region where courier has completed orders
         regions_with_completed_orders = Region.objects.filter(
@@ -120,7 +119,7 @@ class Courier(models.Model):
 
     def to_dict(self):
         """
-        Returns courier info without rating and earnings
+        Возвращает данные курьера без рейтинга и без заработка
         """
         return {
             "courier_id": self.courier_id,
@@ -135,7 +134,7 @@ class Courier(models.Model):
 
     def info(self):
         """
-        Returns courier info
+        Возвращает информацию о курьере
         """
         rating = self.calculate_rating()
         if rating >= 0:

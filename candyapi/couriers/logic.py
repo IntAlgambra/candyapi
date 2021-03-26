@@ -12,8 +12,9 @@ from .validators import CouriersListDataModel, CourierDataModel
 @transaction.atomic
 def create_couriers_from_list(couriers: CouriersListDataModel) -> List[int]:
     """
-    Function creates several couriers from input data. Couriers added inside
-    transaction_atomic  to prevent database changes in case of errors
+    Создает курьеров из списка с данными курьеров. Обернута в transaction.atomic
+    чтобы гарантировать, что при ошибке ни один курьер из списка не будет
+    добавлен в БД
     """
     created_couriers = []
     for courier in couriers.data:

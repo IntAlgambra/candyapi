@@ -13,9 +13,11 @@ from .utils import parse_errors
 
 class InvalidCouriersInDataError(PydanticValueError):
     """
-    Class describes error when some couriers in data are invalid.
-    This exception has field "invalid_couriers" with list of id,
-    which did not pass validation
+    Исключение, которое возбуждается, если в списке курьеров
+    присутствуют элементы с некорректными данными.
+    В поле invalid_coriers устанавливается словарь с описанием
+    некорректных полей и значений ошибок для каждого невалидного объекта
+    в списке курьеров
     """
     code = "invalid_couriers_in_data"
     msg_template = "found invalid couriers in data"
@@ -27,7 +29,8 @@ class InvalidCouriersInDataError(PydanticValueError):
 
 class InvalidCourierData(PydanticTypeError):
     """
-    class describesr error in courier data types
+    Исключение возбуждается при провале валидации поля
+    в данных  курьера
     """
     code = "invalid_data_type_in_courier_data"
     msg_template = "Invalid data type in courier data"
@@ -35,8 +38,7 @@ class InvalidCourierData(PydanticTypeError):
 
 class DataFieldsError(PydanticTypeError):
     """
-    Describes exception, raised when there is excess
-    fields in data structure
+    Возбуждается, если в в структуре данных есть лишние поля
     """
     code = "extra_or_missing_fields"
     msg_template = "there are extra or missing fields in data"
@@ -44,14 +46,17 @@ class DataFieldsError(PydanticTypeError):
 
 class InvalidIntervalError(PydanticValueError):
     """
-    Describes exception, which is raised when
-    interval is in wrong format
+    Возбуждается если временной интервал некорректен или
+    в неверном формате
     """
     code = "wrong_interval_format"
     msg_template = "wrong interval format"
 
 
 def validate_courier_type(v: str) -> str:
+    """
+    Валидирует тип курьера
+    """
     if v not in ["foot", "car", "bike"]:
         raise InvalidCourierData(courier_type="must be car, foot or bike")
     return v
@@ -59,7 +64,8 @@ def validate_courier_type(v: str) -> str:
 
 def validate_regions(regions: List[int]) -> List[int]:
     """
-    Checks regions id's in list in allowed range
+    Валидирует список регионов. Проверяет тип, наличие дубликатов
+    и находится ли регион в допустимом диапазоне
     """
     for region in regions:
         if type(region) != int:
@@ -72,6 +78,11 @@ def validate_regions(regions: List[int]) -> List[int]:
 
 
 def validate_time_intervals(intervals: List[str]) -> List[str]:
+    """
+    Валидирует список временных интервалов.
+    Проверяет как формат интервала, так и чтобы интервал не начинался позднее,
+    чем заканчивается
+    """
     pattern = r"[012][0-9]:[0-5][0-9]\-[012][0-9]:[0-5][0-9]"
     for period in intervals:
         if not re.fullmatch(pattern=pattern, string=period):
@@ -87,8 +98,7 @@ def validate_time_intervals(intervals: List[str]) -> List[str]:
 # noinspection PyMethodParameters
 class CourierDataModel(BaseModel):
     """
-    Describes courier data model, which will be used to validate
-    input json data.
+    Описывает список полей в данных курьера
     """
 
     # For courier_id and regions type is checked manually in validators
@@ -102,7 +112,8 @@ class CourierDataModel(BaseModel):
     @validator("courier_id", always=True)
     def validate_courier_id(cls, v: int) -> int:
         """
-        Checks tht courier_id is positive and not exceeds postgres bigserial
+        Проверяет, что courier_id присутствует, является типом int
+        и не выходит из допустимого диапазона
         """
         if not v:
             raise InvalidCourierData(courier_id="courier_id is required")
@@ -115,21 +126,21 @@ class CourierDataModel(BaseModel):
     @validator("courier_type")
     def validate_type(cls, v: str) -> str:
         """
-        Checks if courier type is car, bike or foot and nothing else
+        Валидирует тип курьера
         """
         return validate_courier_type(v)
 
     @validator("regions")
     def validate_regions(cls, v: List[int]) -> List[int]:
         """
-        Checks if region id is not in allowed range
+        Валидирует список регионов
         """
         return validate_regions(v)
 
     @validator("working_hours")
     def validate_woring_hours(cls, v: List[str]) -> List[str]:
         """
-        Checks if working hours field contains only valid strings
+        Валидирует список интервалов работы
         """
         return validate_time_intervals(
             intervals=v,
@@ -138,7 +149,7 @@ class CourierDataModel(BaseModel):
     @root_validator(pre=True, skip_on_failure=False)
     def validate_fields(cls, values: Dict) -> Dict:
         """
-        Checks if courier data has some excess fields
+        Валидирует отсутствие лишних полей
         """
         excess_fields = set(values.keys()).difference({
             "courier_id",
@@ -156,7 +167,7 @@ class CourierDataModel(BaseModel):
 # noinspection PyMethodParameters
 class CourierPatchDataModel(BaseModel):
     """
-    Describes data model for patch courier data
+    Описывает поля при обновлении данных курьера
     """
     courier_type: Optional[str] = None
     regions: Optional[List[Any]] = None
@@ -165,21 +176,21 @@ class CourierPatchDataModel(BaseModel):
     @validator("courier_type")
     def validate_type(cls, v: str) -> str:
         """
-        Validates courier type
+        Валидирует тип курьера
         """
         return validate_courier_type(v)
 
     @validator("regions")
     def validate_regions(cls, v: List[int]) -> List[int]:
         """
-        Checks if region id's are in allowed range
+        Валиирует список регионов
         """
         return validate_regions(v)
 
     @validator("working_hours")
     def validate_working_hours(cls, v: List[str]) -> List[str]:
         """
-        Validates working hours
+        Валиддирует список интервалов работы
         """
         return validate_time_intervals(
             intervals=v,
@@ -188,7 +199,7 @@ class CourierPatchDataModel(BaseModel):
     @root_validator(pre=True)
     def validate_fields(cls, values: Dict) -> Dict:
         """
-        validates no extra fields provided
+        Валидирует отсутствие лишних полей
         """
         possible_fields = {
             "courier_type",
@@ -210,15 +221,17 @@ class CourierPatchDataModel(BaseModel):
 # noinspection PyMethodParameters
 class CouriersListDataModel(BaseModel):
     """
-    Describes list of couriers data (basically, describes input data from api user
-    on endpoint POST /couriers)
+    Описывает список курьеров. При инициализации проходится
+    по всем курьерам и при наличии ошибок, возбуждает исключение,
+    в которое передает список этих ошибок
     """
     data: List[Dict]
 
     def __init__(self, **kwargs):
         """
-        validates all couriers, if there are problems
-        raise InvalidCouriersInData exception
+        Валидирует всех курьеров. При ошибках вызывает
+        InvalidCouriersInDataError в который передает список словарей
+        описывающих ошибки в данных курьеров
         """
         super(CouriersListDataModel, self).__init__(**kwargs)
         errors = []
@@ -237,6 +250,9 @@ class CouriersListDataModel(BaseModel):
 
     @root_validator(pre=True)
     def validate_no_excess_fields(cls, values: Dict) -> Dict:
+        """
+        Валидирует отсутствие лишних полей
+        """
         excess_fields = set(values.keys()).difference({"data"})
         missed_fields = {"data"}.difference(set(values))
         if excess_fields or missed_fields:

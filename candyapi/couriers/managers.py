@@ -9,7 +9,8 @@ class CourierManager(models.Manager):
 
     def create_courier(self, data: CourierDataModel):
         """
-        Creates new courier in database and returns orm representations
+        Создает объект курьера из объекта CourierDataModel
+        и возвращает его
         """
         courier = self.create(
             courier_id=data.courier_id,

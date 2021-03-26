@@ -9,7 +9,10 @@ from .models import Order
 
 def construct_assign_query(intervals: List[Interval]) -> List:
     """
-    Creates filter condition
+    Создает условие для фильрации django query по перечению хотя бы
+    обного интервала из переданного списка интервалов работы курьера
+    с хотя бы одним интервалом из интервалов доставки заказа.
+    Возвращается django Q object, передаваемый в filter
     """
     interval_filters = []
     for interval in intervals:
@@ -21,9 +24,10 @@ def construct_assign_query(intervals: List[Interval]) -> List:
 
 def fill_weight(orders: List[Order], max_weight: float) -> List[Order]:
     """
-    Uses greedy algorithm to select from list of suitable orders
-    such orders, that courier would carry as much weight as he can.
-    Orders list should be sorted by order weight
+    Использует жадный алгоритм для выбора из списка подходящих
+    заказов тех, который назначаютсяя курьеру. На вход получает список
+    подходящих заказов, отсортированный по весу и максимальный допустимый вес
+    Приоритет отдается наиболее тяжелым заказам
     """
     sum_weight = 0
     orders_to_assign = []

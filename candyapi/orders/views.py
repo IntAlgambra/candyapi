@@ -32,6 +32,7 @@ from couriers.utils import parse_errors
 
 
 class OrdersView(View):
+    """Орабатывает запрос к /orders"""
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
@@ -41,6 +42,7 @@ class OrdersView(View):
         return super(OrdersView, self).dispatch(request, *args, **kwargs)
 
     def post(self, request: HttpRequest) -> HttpResponse:
+        """Обрабатывает запрос на дообавление заказов"""
         try:
             data = json.loads(request.body.decode())
             orders_list = OrderListDataModel(**data)
@@ -76,6 +78,7 @@ class OrdersView(View):
 
 
 class AssignView(View):
+    """Обрабатывает запрос на /orders/assign"""
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
@@ -83,7 +86,7 @@ class AssignView(View):
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """
-        Process assigning orders to courier
+        Обрабатывает запрос на назнаяение заказов курьеру
         """
         try:
             data = json.loads(request.body.decode())
@@ -116,6 +119,7 @@ class AssignView(View):
 
 
 class CompletionView(View):
+    """Обрабатывает запросы на /orders/complete"""
 
     @method_decorator(csrf_exempt)
     def dispatch(self, request, *args, **kwargs):
@@ -123,7 +127,7 @@ class CompletionView(View):
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """
-        method process adding new orders to database
+        Обрабатывает запрос на завершение заказа
         """
         try:
             data = CompletionDataModel(

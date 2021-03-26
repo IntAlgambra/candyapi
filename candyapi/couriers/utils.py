@@ -5,8 +5,8 @@ from pydantic import ValidationError
 
 def parse_errors(error: ValidationError) -> Dict:
     """
-    Fucntion parses pydantic validation error to dictionary
-    with format "field": "error_msg"
+    Парсит список ошибок из ValidationError в
+     формат "field": "error_msg", который возвращается клиенту
     """
     errors = {}
     for e in error.errors():

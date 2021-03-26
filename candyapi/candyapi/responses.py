@@ -3,8 +3,7 @@ from django.http import JsonResponse
 
 class InvalidJsonResponse(JsonResponse):
     """
-    This response is returning if request body can not be
-    decoded as vald json
+    Ответ, возвращаемый в случае, если в запросе был невалидный json
     """
 
     def __init__(self):
@@ -18,8 +17,8 @@ class InvalidJsonResponse(JsonResponse):
 
 class ValidationErrorsResponse(JsonResponse):
     """
-    This response is returned if request data has infalid fields
-    or structure
+    Возвращается в случае, если во входных данных были
+    некорректные значения
     """
 
     def __init__(self, errors):
@@ -35,9 +34,12 @@ class ValidationErrorsResponse(JsonResponse):
 
 class DatabaseErrorResponse(JsonResponse):
     """
-    This response is returned if there was an database error proceeding
-    request (for example, if there is an attempt to add existing courier,
-    or complete order, that does not exist)
+    Возвращается при ошибке в БД или логике программы, например:
+    - Попытка добавить существующиего курьера или существующий заказ
+    - Получить информаци о несуществующем курьере
+    - Завершить несуществующий, не назначенный или завершенный заказ
+    - Завершить заказ ранее, чем был завершен предыдущий.
+    и т. д. Конкретное описание ошибки в поле database_error
     """
 
     def __init__(self, error: str):

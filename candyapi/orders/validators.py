@@ -13,11 +13,20 @@ from couriers.utils import parse_errors
 
 
 class InvalidOrderData(PydanticTypeError):
+    """
+    Возбуждается, если в полях данных заказа
+    были переданы некорректные данные
+    """
     code = "order_type_error"
     msg_template = "Type error in order data"
 
 
 class InvalidOrdersInData(PydanticTypeError):
+    """
+    Возбуждается, если в списке заказов есть некорректные.
+    В поле invalid_orders содержится список объектов
+    с описание ошибок в полях заказов
+    """
     code = "errors_in_orders_data"
     msg_template = "errors in orders data"
 
@@ -27,17 +36,28 @@ class InvalidOrdersInData(PydanticTypeError):
 
 
 class AssignExcessFieldError(PydanticTypeError):
+    """
+    Возбуждается при наличии лишних полей в данных
+    переданных для назначения заказов
+    """
     code = "excess_field_in_assign_data"
     msg_template = "excess field in assign data"
 
 
 class CompletionExcessFieldsError(PydanticTypeError):
+    """
+    Возбужается при наличии лишних полей в данных
+    завершения заказа
+    """
     code = "excess_fields_in_completion_data"
     msg_template = "excess fields in completion data"
 
 
 # noinspection PyMethodParameters
 class OrderDataModel(BaseModel):
+    """
+    Структура данных, описывающая заказ
+    """
     order_id: Any
     weight: Any
     region: Any
@@ -46,7 +66,7 @@ class OrderDataModel(BaseModel):
     @validator("order_id", always=True)
     def validate_order_id(cls, v: int) -> int:
         """
-        Checks if order_id is in allowed range
+        Валидирует order_id заказа
         """
         if not v:
             raise InvalidOrderData(order_id="order_id is required")
@@ -58,6 +78,7 @@ class OrderDataModel(BaseModel):
 
     @validator("region", always=True)
     def validate_region(cls, v):
+        """Валидирует регион заказа"""
         if not v:
             raise InvalidOrderData(region="region is required")
         if type(v) != int:
@@ -68,6 +89,7 @@ class OrderDataModel(BaseModel):
 
     @validator("weight", always=True)
     def validate_weight(cls, v):
+        """Валидирует вес заказа"""
         if not v:
             raise InvalidOrderData(weight="weight is required")
         if type(v) != int and type(v) != float:
@@ -78,6 +100,9 @@ class OrderDataModel(BaseModel):
 
     @validator("delivery_hours")
     def validate_delivery_hours(cls, v):
+        """
+        Валидирует список интервалов доставки
+        """
         if not v:
             raise InvalidOrderData(delievery_hours="at least one interval required")
         return validate_time_intervals(
@@ -86,19 +111,26 @@ class OrderDataModel(BaseModel):
 
     @root_validator(pre=True)
     def validate_fields(cls, values: Dict) -> Dict:
+        """
+        Валидирует отсутствие лишних полей
+        """
         required_fields = {"order_id", "weight", "region", "delivery_hours"}
         excess_fields = set(values.keys()).difference(required_fields)
-        missing_fields = set(required_fields).difference(excess_fields)
         if excess_fields:
             raise InvalidOrderData(
                 excess="excess fields: {}".format(", ".join(excess_fields)),
-                missing="excess fields: {}".format(", ".join(missing_fields))
             )
         return values
 
 
 # noinspection PyMethodParameters
 class OrderListDataModel(BaseModel):
+    """
+    Описывает список заказов. При инициализации валидирует
+    все переданные заказы и, если среди них есть невалидные,
+    возбуждает исключение, в которое передает информацию
+    о невалидных полях в заказах
+    """
     data: List[Dict]
 
     def __init__(self, **kwargs):
@@ -119,6 +151,9 @@ class OrderListDataModel(BaseModel):
 
     @root_validator(pre=True)
     def validate_no_excess_fields(cls, values: Dict) -> Dict:
+        """
+        Валидирует отсутствие лишних полей в заказах
+        """
         excess_fields = set(values.keys()).difference({"data"})
         if excess_fields:
             raise ValueError(
@@ -130,13 +165,14 @@ class OrderListDataModel(BaseModel):
 # noinspection PyMethodParameters
 class AssignDataModel(BaseModel):
     """
-    Describes data, required to assign orders to courier
+    Описывает стрктуру данных для назначения заказов
     """
 
     courier_id: Any
 
     @validator("courier_id", always=True)
     def validate_courier_id(cls, v: int) -> int:
+        """Валидирует courier_id"""
         if not v:
             raise ValueError("courier_id is required")
         if type(v) != int:
@@ -147,6 +183,7 @@ class AssignDataModel(BaseModel):
 
     @root_validator(pre=True)
     def validate_excess_fields(cls, values: Dict) -> Dict:
+        """Валидирует отсутствие лишних полей"""
         excess_fields = set(values.keys()).difference({"courier_id"})
         if excess_fields:
             raise AssignExcessFieldError(
@@ -158,7 +195,7 @@ class AssignDataModel(BaseModel):
 # noinspection PyMethodParameters
 class CompletionDataModel(BaseModel):
     """
-    Describes data, required to complete order
+    Описывает структуру данных для завершения заказа
     """
     courier_id: Any
     order_id: Any
@@ -166,6 +203,7 @@ class CompletionDataModel(BaseModel):
 
     @validator("courier_id", always=True)
     def validate_courier_id(cls, v: int) -> int:
+        """Валидирует courier_id"""
         if not v:
             raise ValueError("courier_id is required")
         if type(v) != int:
@@ -176,6 +214,7 @@ class CompletionDataModel(BaseModel):
 
     @validator("order_id", always=True)
     def validate_order_id(cls, v: int) -> int:
+        """Валидирует order_id"""
         if not v:
             raise ValueError("order_id is required")
         if type(v) != int:
@@ -187,8 +226,7 @@ class CompletionDataModel(BaseModel):
     @validator("complete_time")
     def validate_time(cls, v: str) -> str:
         """
-        Validates complete_time is valid isoformat datetime string
-        with UTC time zone clearly specified
+        Валидирует время окончания заказа (Должно быть строго в UTC)
         """
         pattern = r"\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{1,6}Z"
         if not re.fullmatch(pattern, v):
@@ -197,6 +235,9 @@ class CompletionDataModel(BaseModel):
 
     @root_validator(pre=True)
     def validate_excess_fields(cls, values: Dict) -> Dict:
+        """
+        Валидирует отсутствие лишних полей
+        """
         required_fields = {"courier_id", "order_id", "complete_time"}
         excess_fields = set(values.keys()).difference(required_fields)
         if excess_fields:

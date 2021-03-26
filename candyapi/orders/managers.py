@@ -19,7 +19,8 @@ class DelieveryManager(models.Manager):
 
     def create_delievery(self, orders: List[Order], courier: Courier):
         """
-        Creates new delievery, adds orders to it
+        Создает новый развоз, добавляет в него заказы из переданного
+        списка и наначает его переданому курьеру
         """
         assigned_time = timezone.now()
         delievery = self.create(
@@ -37,7 +38,7 @@ class OrderManager(models.Manager):
 
     def create_order(self, data: OrderDataModel) -> Order:
         """
-        Creates new order
+        Создает новый заказ
         """
         order = self.create(
             order_id=data.order_id,
@@ -52,8 +53,8 @@ class OrderManager(models.Manager):
     @transaction.atomic()
     def create_from_list(self, data: List[Dict]) -> List[Order]:
         """
-        Creates new orders from orders list. Raises IntegrityError when
-        attempt to add order with already existing order_id
+        Создает заказы из переданного списка. Обернута в transaction.atomic,
+        чтобы предотвратить частичное добавление заказов в БД при ошибках
         """
         return list(map(
             self.create_order,
