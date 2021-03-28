@@ -68,6 +68,9 @@ class Courier(models.Model):
                 if order not in orders_to_keep:
                     order.delievery = None
                     order.save()
+            active_delievery.refresh_from_db()
+            if not active_delievery.orders.all().count():
+                active_delievery.delete()
         except ObjectDoesNotExist:
             pass
         finally:
