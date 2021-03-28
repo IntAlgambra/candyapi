@@ -38,8 +38,8 @@ POSTGRES_PASSWORD=пароль пользователя в БД Postgres
 4. Запускаем приложение  и производим миграции БД
 
 ```
-docker-compose up -d --build
-docker-compose run --rm backend python manage.py migrate
+sudo docker-compose up -d --build
+sudo docker-compose run --rm backend python manage.py migrate
 ```
 
 ## Обновление приложения
@@ -53,8 +53,8 @@ git pull
 2. Пересобираем контейнеры и запускаем миграции БД
 
 ```
-docker-compose up -d --build
-docker-compose run --rm backend python manage.py migrate
+sudo docker-compose up -d --build
+sudo docker-compose run --rm backend python manage.py migrate
 ```
 
 ## Тестирование
@@ -62,7 +62,7 @@ docker-compose run --rm backend python manage.py migrate
 Запускаем тесты в отдельном контейнере, имеющем доступ к контейнеру с БД
 
 ```
-docker-compose run --rm backend python manage.py test
+sudo docker-compose run --rm backend python manage.py test
 ```
 
 ## Развертывание в режиме для разработки
@@ -72,7 +72,7 @@ docker-compose run --rm backend python manage.py test
 ошибках непосредственно в консоль.
 
 ```
-docker-compose -f docker-compose.dev.yml up --build
+sudo docker-compose -f docker-compose.dev.yml up --build
 ```
 
 ## Схема базы данных приложения
